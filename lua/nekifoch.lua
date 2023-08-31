@@ -16,19 +16,6 @@ local get = function()
   return current_font_family
 end
 
-local replace_font_family = function(new_font_family)
-  local f = assert(io.open(require('nekifoch').config.kitty_conf_path, 'r'))
-  local content = f:read('*all')
-  f:close()
-
-  local modified_content =
-    content:gsub('font_family.-\n', 'font_family ' .. new_font_family .. '\n')
-
-  f = assert(io.open(require('nekifoch').config.kitty_conf_path, 'w'))
-  f:write(modified_content)
-  f:close()
-end
-
 local function listInstalledFonts()
   local cmd = "fc-list : family 2>/dev/null | awk -F ',' '{print $1}'"
   local handle = io.popen(cmd)
@@ -83,10 +70,18 @@ local function compareFontsWithKittyListFonts(installedFonts)
   return compatibleFonts
 end
 
--- Usage
-local availableFonts = compareFontsWithKittyListFonts(listInstalledFonts())
+local replace_font_family = function(new_font_family)
+  local f = assert(io.open(require('nekifoch').config.kitty_conf_path, 'r'))
+  local content = f:read('*all')
+  f:close()
 
-vim.notify('Available fonts:' .. vim.inspect(availableFonts))
+  local modified_content =
+    content:gsub('font_family.-\n', 'font_family ' .. new_font_family .. '\n')
+
+  f = assert(io.open(require('nekifoch').config.kitty_conf_path, 'w'))
+  f:write(modified_content)
+  f:close()
+end
 
 ---@type FontReplaceConfig
 M.config = {
@@ -100,12 +95,17 @@ function M.setup(config)
     if opts.fargs[1] == 'write' then
       replace_font_family(opts.fargs[2])
     elseif opts.fargs[1] == 'list' then
-      print(vim.inspect(listInstalledFonts()))
+      local availableFonts =
+        compareFontsWithKittyListFonts(listInstalledFonts())
+      print('Available fonts:')
+      for _, font in pairs(availableFonts) do
+        print(' - ' .. font)
+      end
     elseif opts.fargs[1] == 'check' then
       ---@type string
       local current_font_family = get()
       if current_font_family then
-        vim.notify(current_font_family, 2, { title = 'Font' })
+        vim.notify(current_font_family, 2, { title = 'Current font' })
       else
         vim.notify(
           'Font family not found in configuration',
@@ -117,9 +117,20 @@ function M.setup(config)
   end, {
     nargs = '*',
     desc = 'Replace font family in Kitty configuration file',
-    complete = function()
-      local commands = { 'check', 'write', 'list' }
-      return commands
+
+    complete = function(findstart, base)
+      if findstart == 1 then
+        return vim.fn.col('.') - 1
+      else
+        local args = vim.fn.split(vim.fn.getcmdline(), ' ')
+        local current_arg = args[2]
+
+        if current_arg == 'write' then
+          return compareFontsWithKittyListFonts(listInstalledFonts())
+        else
+          return { 'check', 'write', 'list' }
+        end
+      end
     end,
   })
 end
