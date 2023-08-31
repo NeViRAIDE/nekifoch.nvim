@@ -51,7 +51,7 @@ Contributions to NEKIFOCH are welcome! To contribute:
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the (actually i am not sure about that...i will think about that later....).
 
 ## Support
 

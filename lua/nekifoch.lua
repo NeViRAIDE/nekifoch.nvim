@@ -70,7 +70,8 @@ local function compareFontsWithKittyListFonts(installedFonts)
   return compatibleFonts
 end
 
-local replace_font_family = function(new_font_family)
+local replace_font_family = function(...)
+  local new_font_family = table.concat({ ... }, ' ')
   local f = assert(io.open(require('nekifoch').config.kitty_conf_path, 'r'))
   local content = f:read('*all')
   f:close()
@@ -93,7 +94,12 @@ function M.setup(config)
 
   vim.api.nvim_create_user_command('Nekifoch', function(opts)
     if opts.fargs[1] == 'write' then
-      replace_font_family(opts.fargs[2])
+      local args = {}
+      for i = 2, #opts.fargs do
+        table.insert(args, opts.fargs[i])
+      end
+      replace_font_family(unpack(args))
+      vim.cmd('silent !kill -USR1 $(pidof kitty)')
     elseif opts.fargs[1] == 'list' then
       local availableFonts =
         compareFontsWithKittyListFonts(listInstalledFonts())
@@ -118,7 +124,7 @@ function M.setup(config)
     nargs = '*',
     desc = 'Replace font family in Kitty configuration file',
 
-    complete = function(findstart, base)
+    complete = function(findstart)
       if findstart == 1 then
         return vim.fn.col('.') - 1
       else

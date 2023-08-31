@@ -1,0 +1,68 @@
+*nekifoch.txt*    Neovim plugin for managing Kitty font settings    Last change: 2023-08-31 
+
+NeKifoch                                           *nekifoch* *Nekifoch*
+
+1. Introduction                                   *nekifoch-introduction*
+
+NeKifoch is a Neovim plugin that provides a command to interact with Kitty's font settings.
+
+2. Installation                                  *nekifoch-installation*
+
+To install NeKifoch, use your favorite plugin manager and add it as a dependency.
+
+3. Usage                                         *nekifoch-usage*
+
+NeKifoch provides the |Nekifoch| command to manage Kitty font settings.
+
+3.1. |Nekifoch| command                         *nekifoch-command*
+
+The |Nekifoch| command has the following syntax:
+
+    :Nekifoch [action] [font_family]
+
+Where [action] can be one of the following:
+- |check|: Check the current font family.
+- |write|: Replace the font family with [font_family].
+- |list|: List available fonts compatible with Kitty.
+
+3.2. Arguments                                 *nekifoch-arguments*
+
+- [font_family]: The new font family to replace the current one.
+
+4. Configuration                                *nekifoch-configuration*
+
+NeKifoch can be configured using the |FontReplaceConfig| dictionary.
+
+4.1. |kitty_conf_path|                         *nekifoch-kitty_conf_path*
+
+The path to the Kitty configuration file.
+
+5. Functions and Utilities                      *nekifoch-functions*
+
+NeKifoch provides the following utility functions:
+
+- |get|(): Retrieve the current font family from the Kitty configuration file.
+- |listInstalledFonts|(): List all installed fonts.
+- |compareFontsWithKittyListFonts|(): Compare installed fonts with Kitty-compatible fonts.
+- |replace_font_family|(...): Replace the font family in the Kitty configuration file.
+
+6. Examples                                    *nekifoch-examples*
+
+Here are some usage examples:
+
+- Check the current font family:
+    :Nekifoch check
+
+- Replace the font family with "DejaVu Sans Mono":
+    :Nekifoch write DejaVu Sans Mono
+
+- List available fonts compatible with Kitty:
+    :Nekifoch list
+
+7. Credits                                     *nekifoch-credits*
+
+Nekifoch is developed by RAprogramm.
+
+==============================================================================
+
+vim:tw=78:ts=8:ft=help:norl:
