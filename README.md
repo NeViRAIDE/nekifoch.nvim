@@ -10,14 +10,12 @@
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
   <a href="#configuration">Configuration</a> •
-  <a href="#functions-and-utilities">Functions and Utilities</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a> •
   <a href="#donations">Donations</a>
 </p>
 
 ---
-
 
 https://github.com/RAprogramm/nekifoch/assets/70325462/04a0d7e7-a42e-4588-a926-0945adacb3f0
 
@@ -41,12 +39,16 @@ Nekifoch provides the `:Nekifoch` command with the following syntax:
 :Nekifoch [action] [font_family]
 ```
 
-- `[action]` can be one of: `check`, `write`, `list`.
-- `[font_family]`: New font family for the `write` action.
+- `[action]` can be one of:
+  - `check`,
+  - `set_font`,
+  - `set_size`,
+  - `list`.
+- `[font_family]`: New font family for the `set_font` action.
 
 Examples:
 
-- Check the current font family:
+- Check the current font family and size:
 
 ```vim
 :Nekifoch check
@@ -55,7 +57,13 @@ Examples:
 - Replace the font family with "DejaVu Sans Mono":
 
 ```vim
-:Nekifoch write DejaVu Sans Mono
+:Nekifoch set_font DejaVu Sans Mono
+```
+
+- Replace the font size with "14":
+
+```vim
+:Nekifoch set_size 14
 ```
 
 - List available fonts compatible with Kitty:
@@ -90,15 +98,6 @@ or
 ```
 
 Replace '~/.config/kitty/kitty.conf' with the actual path to your Kitty terminal configuration.
-
-## Functions and Utilities
-
-Nekifoch provides these utility functions:
-
-- `get()`: Get the current font family from the Kitty configuration.
-- `listInstalledFonts()`: List all installed fonts.
-- `compareFontsWithKittyListFonts()`: Compare installed fonts with Kitty-compatible fonts.
-- `replace_font_family(...)`: Replace the font family in the Kitty configuration.
 
 ## Credits
 
