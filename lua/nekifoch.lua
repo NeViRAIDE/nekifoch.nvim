@@ -1,6 +1,7 @@
 ---@class FontReplaceConfig
 ---@field kitty_conf_path string
 
+-- TODO: add reading from NEVIRAIDE config and config path to NEVIRAIDEfile
 local M = {}
 
 ---@type FontReplaceConfig
