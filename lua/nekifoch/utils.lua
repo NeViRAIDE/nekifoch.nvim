@@ -102,4 +102,16 @@ M.replace_font_size = function(size)
   f:close()
 end
 
+-- Cache for installed fonts
+M.cachedInstalledFonts = nil
+
+---Get list of installed fonts with caching mechanism
+---@return table
+M.getCachedInstalledFonts = function()
+  if not M.cachedInstalledFonts then
+    M.cachedInstalledFonts = M.listInstalledFonts()
+  end
+  return M.cachedInstalledFonts
+end
+
 return M

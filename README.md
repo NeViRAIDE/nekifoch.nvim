@@ -31,6 +31,17 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 }
 ```
 
+## Default config values
+
+```lua
+{
+    kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf')
+    which_key = {
+        enable = false
+    }
+}
+```
+
 ## Usage
 
 Nekifoch provides the `:Nekifoch` command with the following syntax:
@@ -91,13 +102,63 @@ or
 ```lua
 {
     'RAprogramm/nekifoch',
+    cmd = 'Nekifoch', -- to add lazy loading
     opts = {
-        kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf')
+        kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf') -- your kitty config path
+        which_key = {
+            enable = false -- without which_key and nui
+        }
     }
 }
 ```
 
 Replace '~/.config/kitty/kitty.conf' with the actual path to your Kitty terminal configuration.
+
+## WhichKey and Nui UI
+
+> [!IMPORTANT]
+> [Nui](https://github.com/MunifTanjim/nui.nvim) and [WhichKey](https://github.com/folke/which-key.nvim) must be installed
+
+Here's an example configuration using Lua:
+
+```lua
+require('nekifoch').setup({
+    which_key = {
+        enable = true
+    }
+})
+```
+
+or
+
+```lua
+{
+  'RAprogramm/nekifoch',
+  event = 'VeryLazy',
+  dependencies = {
+    { 'nvim-lua/plenary.nvim' },
+    { 'MunifTanjim/nui.nvim' },
+    {
+      "folke/which-key.nvim",
+      event = "VeryLazy",
+      init = function()
+        vim.o.timeout = true
+        vim.o.timeoutlen = 300
+      end,
+      opts = {
+        -- your configuration comes here
+        -- or leave it empty to use the default settings
+        -- refer to the configuration section below
+      }
+    }
+  }
+  opts = {
+    which_key = {
+      enable = true
+    }
+  }
+}
+```
 
 ## Credits
 
