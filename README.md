@@ -8,8 +8,10 @@
 
 <p align="center">
   <a href="#installation">Installation</a> •
+  <a href="#default_config_values">Defaults</a> •
   <a href="#usage">Usage</a> •
   <a href="#configuration">Configuration</a> •
+  <a href="#whichkey_and_nui_ui">WhichKey</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a> •
   <a href="#donations">Donations</a>
@@ -115,6 +117,12 @@ or
 Replace '~/.config/kitty/kitty.conf' with the actual path to your Kitty terminal configuration.
 
 ## WhichKey and Nui UI
+
+
+
+https://github.com/RAprogramm/nekifoch/assets/70325462/eb418579-7ef1-4d14-83cb-f9baf2e68b52
+
+
 
 > [!IMPORTANT]
 > [Nui](https://github.com/MunifTanjim/nui.nvim) and [WhichKey](https://github.com/folke/which-key.nvim) must be installed
