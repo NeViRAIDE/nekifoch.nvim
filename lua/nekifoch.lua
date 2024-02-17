@@ -39,10 +39,10 @@ function M.setup(config)
     require('nekifoch.which_key')
   elseif M.config.which_key.enable then
     print(
-      "Extra functionality is enabled but plugin 'which-key' and/or 'plenary.nvim' are not installed. Additional functionality will not be available."
+      "WhichKey functionality is enabled but plugin 'which-key' and/or 'plenary.nvim' are not installed. Additional functionality will not be available."
     )
   else
-    print('Extra functionality is disabled.')
+    print('WhichKey functionality is disabled.')
   end
 end
 
