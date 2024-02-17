@@ -8,10 +8,10 @@
 
 <p align="center">
   <a href="#installation">Installation</a> •
-  <a href="#default_config_values">Defaults</a> •
+  <a href="#defaults">Defaults</a> •
   <a href="#usage">Usage</a> •
   <a href="#configuration">Configuration</a> •
-  <a href="#whichkey_and_nui_ui">WhichKey</a> •
+  <a href="#whichkey">WhichKey</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a> •
   <a href="#donations">Donations</a>
@@ -33,7 +33,7 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 }
 ```
 
-## Default config values
+<h2 id='defaults'>Default config values</h2>
 
 ```lua
 {
@@ -116,7 +116,7 @@ or
 
 Replace '~/.config/kitty/kitty.conf' with the actual path to your Kitty terminal configuration.
 
-## WhichKey and Nui UI
+<h2 id='whichkey'>WhichKey and Nui UI</h2>
 
 
 
