@@ -13,13 +13,11 @@ return function()
         top_align = 'center',
       },
     },
+    buf_options = { filetype = 'nekifoch' },
     win_options = {
       winhighlight = 'NormalFloat:NormalFloat,FloatBorder:FloatBorder',
     },
     relative = 'editor',
-    buf_options = {
-      filetype = 'create',
-    },
   }, {
     prompt = '',
     default_value = '',
