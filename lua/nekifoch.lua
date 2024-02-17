@@ -1,6 +1,6 @@
 ---@class FontReplaceConfig
 ---@field kitty_conf_path string
----@field enable_extra_functionality boolean
+---@field which_key boolean
 
 -- TODO: add reading from NEVIRAIDE config and config path to NEVIRAIDEfile
 local M = {}
@@ -8,7 +8,7 @@ local M = {}
 ---@type FontReplaceConfig
 M.config = {
   kitty_conf_path = vim.env.HOME .. '/.config/kitty/kitty.conf',
-  enable_extra_functionality = false, -- Default value: extra functionality is disabled
+  which_key = false, -- Default value: extra functionality is disabled
 }
 
 --- Check if a plugin is installed
@@ -27,16 +27,12 @@ function M.setup(config)
 
   -- Check if which-key and plenary.nvim are installed
   if
-    M.config.enable_extra_functionality
+    M.config.which_key
     and is_plugin_installed('which-key')
-    and is_plugin_installed('plenary.nvim')
+    and is_plugin_installed('plenary')
   then
-    -- Add your additional functionality here
-    print(
-      "Plugin 'which-key' and 'plenary.nvim' are installed and extra functionality is enabled."
-    )
-    -- Example: require('your_module').your_function()
-  elseif M.config.enable_extra_functionality then
+    require('nekifoch.which_key')
+  elseif M.config.which_key then
     print(
       "Extra functionality is enabled but plugin 'which-key' and/or 'plenary.nvim' are not installed. Additional functionality will not be available."
     )
