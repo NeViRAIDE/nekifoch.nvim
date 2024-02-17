@@ -1,16 +1,9 @@
 local wk = require('which-key')
 
 wk.register({
-  ['<leader>'] = {
-    s = {
-      name = 'Settings',
-      f = {
-        name = 'Font',
-        l = { ':Nekifoch list<cr>', 'Fonts list' },
-        c = { ':Nekifoch check<cr>', 'Check current font settings' },
-        f = { ':Nekifoch set_font<cr>', 'Set font family' },
-        s = { ':Nekifoch set_size<cr>', 'Set font size' },
-      },
-    },
-  },
+  ['<leader>sf'] = { name = 'Font' },
+  ['<leader>sfl'] = { ':Nekifoch list<cr>', 'Fonts list' },
+  ['<leader>sfc'] = { ':Nekifoch check<cr>', 'Check current font settings' },
+  ['<leader>sff'] = { ':Nekifoch set_font<cr>', 'Set font family' },
+  ['<leader>sfs'] = { ':Nekifoch set_size<cr>', 'Set font size' },
 })
