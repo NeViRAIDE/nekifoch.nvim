@@ -37,10 +37,11 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 
 ```lua
 {
-    kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf')
+    kitty_conf_path = vim.env.HOME .. '~/.config/kitty/kitty.conf',
     which_key = {
         enable = false
-    }
+    },
+    borders = 'rounded'
 }
 ```
 
