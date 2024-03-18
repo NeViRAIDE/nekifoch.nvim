@@ -10,6 +10,9 @@ return function()
     table.insert(fontMenuItems, Menu.item(font))
   end
 
+  ---@type string
+  local curFont = util.get().font
+
   local menu = Menu({
     position = '50%',
     size = {
@@ -23,6 +26,7 @@ return function()
       text = {
         top = ' Set font family ',
         top_align = 'center',
+        bottom = ' ' .. curFont .. ' ',
       },
     },
     win_options = {
