@@ -19,7 +19,7 @@ return function()
     buf_options = { filetype = 'nekifoch' },
     border = {
       padding = { 0, 1 },
-      style = 'rounded',
+      style = require('nekifoch').config.borders,
       text = {
         top = ' Set font family ',
         top_align = 'center',

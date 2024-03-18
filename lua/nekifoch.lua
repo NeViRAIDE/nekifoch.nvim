@@ -1,6 +1,7 @@
 ---@class FontReplaceConfig
 ---@field kitty_conf_path string
 ---@field which_key WhichKeyNekifoch
+---@field borders "'none'"|"'single'"|"'double'"|"'rounded'"|"'solid'"|"'shadow'"
 
 ---@class WhichKeyNekifoch
 ---@field enable boolean
@@ -13,7 +14,8 @@ M.config = {
   kitty_conf_path = vim.env.HOME .. '/.config/kitty/kitty.conf',
   which_key = {
     enable = false,
-  }, -- Default value: extra functionality is disabled
+  },
+  borders = 'rounded',
 }
 
 --- Check if a plugin is installed
