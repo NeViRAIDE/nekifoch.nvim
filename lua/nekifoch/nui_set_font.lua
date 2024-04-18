@@ -4,7 +4,7 @@ return function()
   local util = require('nekifoch.utils')
 
   local fontMenuItems = {}
-  local compatibleFonts =
+  local _, compatibleFonts =
     util.compareFontsWithKittyListFonts(util.getCachedInstalledFonts())
   for _, font in ipairs(compatibleFonts) do
     table.insert(fontMenuItems, Menu.item(font))
@@ -14,6 +14,7 @@ return function()
   local curFont = util.get().font
 
   local menu = Menu({
+    -- TODO: change position and size
     position = '50%',
     size = {
       width = 40,

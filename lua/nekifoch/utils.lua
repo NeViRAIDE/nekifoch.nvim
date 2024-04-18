@@ -42,36 +42,65 @@ M.listInstalledFonts = function()
   return installedFonts
 end
 
+-- M.compareFontsWithKittyListFonts = function(installedFonts)
+--   local handle = io.popen('kitty +list-fonts 2>/dev/null') -- Redirect stderr to /dev/null
+--   if not handle then
+--     return {} -- Return an empty list if the command couldn't be executed
+--   end
+--   local result = handle:read('*a')
+--   handle:close()
+--
+--   local kittyFonts = {}
+--
+--   for font in result:gmatch('[^\r\n]+') do
+--     table.insert(kittyFonts, font)
+--   end
+--
+--   local compatibleFonts = {}
+--
+--   for _, font in ipairs(installedFonts) do
+--     local found = false
+--     for _, kittyFont in ipairs(kittyFonts) do
+--       if kittyFont:match(font) then
+--         found = true
+--         break
+--       end
+--     end
+--     if found then table.insert(compatibleFonts, font) end
+--   end
+--
+--   table.sort(compatibleFonts)
+--
+--   return compatibleFonts
+-- end
+
 M.compareFontsWithKittyListFonts = function(installedFonts)
   local handle = io.popen('kitty +list-fonts 2>/dev/null') -- Redirect stderr to /dev/null
-  if not handle then
-    return {} -- Return an empty list if the command couldn't be executed
-  end
+  if not handle then return {}, {} end
   local result = handle:read('*a')
   handle:close()
 
   local kittyFonts = {}
+  local formattedFontsMap = {}
 
   for font in result:gmatch('[^\r\n]+') do
-    table.insert(kittyFonts, font)
+    kittyFonts[font] = true
+    local formattedFont = font:gsub('%s+', '')
+    formattedFontsMap[formattedFont] = font
   end
 
   local compatibleFonts = {}
+  local compatibleFormattedFonts = {}
 
   for _, font in ipairs(installedFonts) do
-    local found = false
-    for _, kittyFont in ipairs(kittyFonts) do
-      if kittyFont:match(font) then
-        found = true
-        break
-      end
+    if kittyFonts[font] then table.insert(compatibleFonts, font) end
+    local formattedFont = font:gsub('%s+', '')
+    if kittyFonts[formattedFontsMap[formattedFont]] then
+      compatibleFormattedFonts[formattedFont] = formattedFontsMap[formattedFont]
     end
-    if found then table.insert(compatibleFonts, font) end
   end
 
-  table.sort(compatibleFonts)
-
-  return compatibleFonts
+  return compatibleFormattedFonts, compatibleFonts
 end
 
 M.replace_font_family = function(...)

@@ -30,7 +30,8 @@ end
 ---@param config table
 function M.setup(config)
   M.config = vim.tbl_deep_extend('force', M.config, config or {})
-  require('nekifoch.command')
+  require('nekifoch.command').setup()
+  -- require('nekifoch.command')
 
   -- Check if which-key and plenary.nvim are installed
   if
@@ -47,5 +48,7 @@ function M.setup(config)
     print('WhichKey functionality is disabled.')
   end
 end
+
+function M.cmd(name) require('nekifoch.command').cmd(name) end
 
 return M
