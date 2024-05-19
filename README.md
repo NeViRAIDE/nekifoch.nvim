@@ -27,7 +27,7 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 
 ```lua
 {
-    'RAprogramm/nekifoch',
+    'NeViRAIDE/nekifoch',
     cmd = 'Nekifoch',
     opts = {}
 }
@@ -104,7 +104,7 @@ or
 
 ```lua
 {
-    'RAprogramm/nekifoch',
+    'NeViRAIDE/nekifoch',
     cmd = 'Nekifoch', -- to add lazy loading
     opts = {
         kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf') -- your kitty config path
