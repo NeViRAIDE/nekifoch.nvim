@@ -1,4 +1,4 @@
-<h1 align="center">Nekifoch</h1>
+<h1 align="center">NeKiFoCh</h1>
 <h3 align="center">Neovim Kitty Font Changer</h3>
 <hr>
 
