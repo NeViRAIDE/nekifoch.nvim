@@ -160,12 +160,12 @@ or
         -- refer to the configuration section below
       }
     }
-  }
+  },
   opts = {
     which_key = {
       enable = true
     }
-  }
+  },
 }
 ```
 
