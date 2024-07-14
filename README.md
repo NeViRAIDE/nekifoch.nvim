@@ -29,7 +29,7 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 {
     'NeViRAIDE/nekifoch.nvim',
     cmd = 'Nekifoch',
-    opts = {}
+    opts = {},
 }
 ```
 
@@ -39,9 +39,9 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 {
     kitty_conf_path = vim.env.HOME .. '~/.config/kitty/kitty.conf',
     which_key = {
-        enable = false
+        enable = false,
     },
-    borders = 'rounded'
+    borders = 'rounded',
 }
 ```
 
@@ -107,10 +107,10 @@ or
     'NeViRAIDE/nekifoch.nvim',
     cmd = 'Nekifoch', -- to add lazy loading
     opts = {
-        kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf') -- your kitty config path
+        kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf'), -- your kitty config path
         which_key = {
-            enable = false -- without which_key and nui
-        }
+            enable = false, -- without which_key and nui
+        },
     }
 }
 ```
@@ -163,7 +163,7 @@ or
   },
   opts = {
     which_key = {
-      enable = true
+      enable = true,
     }
   },
 }
