@@ -42,51 +42,28 @@ M.listInstalledFonts = function()
   return installedFonts
 end
 
--- M.compareFontsWithKittyListFonts = function(installedFonts)
---   local handle = io.popen('kitty +list-fonts 2>/dev/null') -- Redirect stderr to /dev/null
---   if not handle then
---     return {} -- Return an empty list if the command couldn't be executed
---   end
---   local result = handle:read('*a')
---   handle:close()
---
---   local kittyFonts = {}
---
---   for font in result:gmatch('[^\r\n]+') do
---     table.insert(kittyFonts, font)
---   end
---
---   local compatibleFonts = {}
---
---   for _, font in ipairs(installedFonts) do
---     local found = false
---     for _, kittyFont in ipairs(kittyFonts) do
---       if kittyFont:match(font) then
---         found = true
---         break
---       end
---     end
---     if found then table.insert(compatibleFonts, font) end
---   end
---
---   table.sort(compatibleFonts)
---
---   return compatibleFonts
--- end
+local function extract_fonts(json_str)
+  local fonts = {}
+  for family in json_str:gmatch('"family":%s-"([^"]+)"') do
+    fonts[family] = true
+  end
+  return fonts
+end
 
 M.compareFontsWithKittyListFonts = function(installedFonts)
-  local handle = io.popen('kitty +list-fonts 2>/dev/null') -- Redirect stderr to /dev/null
+  local handle = io.popen(
+    'kitty +runpy "from kitty.fonts.common import all_fonts_map; import json; print(json.dumps(all_fonts_map(True), indent=2))" 2>/dev/null'
+  )
   if not handle then return {}, {} end
   local result = handle:read('*a')
   handle:close()
 
-  local kittyFonts = {}
+  local kittyFonts = extract_fonts(result)
   local formattedFontsMap = {}
 
-  for font in result:gmatch('[^\r\n]+') do
-    kittyFonts[font] = true
-    local formattedFont = font:gsub('%s+', '')
-    formattedFontsMap[formattedFont] = font
+  for family, _ in pairs(kittyFonts) do
+    local formattedFamily = family:gsub('%s+', '')
+    formattedFontsMap[formattedFamily] = family
   end
 
   local compatibleFonts = {}
