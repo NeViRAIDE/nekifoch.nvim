@@ -1,0 +1,12 @@
+[package]
+name = "nekifoch"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nvim-oxi = { version = "0.5.1", features = ["neovim-0-10", "test"] }
+thiserror = "1.0.63"
+# tokio = { version = "1", features = ["full"] }
+
+[lib]
+crate-type = ["cdylib"]

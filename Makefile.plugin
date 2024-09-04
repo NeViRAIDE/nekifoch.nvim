@@ -1,0 +1,11 @@
+LIB_NAME=libnekifoch.so
+PLUGIN_NAME=nekifoch.so
+LUA_DIR =/home/ra/GitHub/neviraide/nekifoch.nvim/lua
+DEPS_DIR=/home/ra/GitHub/neviraide/nekifoch.nvim/lua/deps
+
+TARGET_DIR=/home/ra/GitHub/neviraide/nekifoch.nvim/target/debug
+
+.PHONY: deploy
+deploy:
+	cp ${TARGET_DIR}/${LIB_NAME} ${LUA_DIR}/${PLUGIN_NAME}
+	cp ${TARGET_DIR}/deps/*.rlib ${DEPS_DIR}
