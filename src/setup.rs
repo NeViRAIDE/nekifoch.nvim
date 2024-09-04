@@ -1,11 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
-
-use nvim_oxi::{api::Window, conversion::FromObject, print, Dictionary, Result as OxiResult};
-
-thread_local! {
-    pub static WIN: Rc<RefCell<Option<Window>>> = Rc::default();
-    pub static CONFIG: Rc<RefCell<Config>> = Rc::new(RefCell::new(Config::default()));
-}
+use nvim_oxi::{conversion::FromObject, print, Dictionary};
 
 #[derive(Debug, Default)]
 pub struct Config {
@@ -53,11 +46,4 @@ impl Config {
 
         config
     }
-}
-
-// `setup` function which accepts `Dictionary`
-pub fn setup(options: Dictionary) -> OxiResult<()> {
-    let config = Config::from_dict(options);
-    CONFIG.with(|c| *c.borrow_mut() = config);
-    Ok(())
 }
