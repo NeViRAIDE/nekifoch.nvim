@@ -2,19 +2,35 @@ use std::{
     collections::HashSet,
     fs::File,
     io::{BufReader, BufWriter, Read, Write},
+    path::{Path, PathBuf},
     process::Command,
 };
 
 use nvim_oxi::{Dictionary, Result as OxiResult, String as NvimString};
+use serde_json::Value;
 
-use crate::{error::ConfigError, CONFIG};
+use crate::{error::ConfigError, Config};
 
 pub struct Utils;
 
+#[derive(Debug, serde::Deserialize)]
+struct FontData {
+    #[serde(rename = "family")]
+    font_family: String,
+}
+
 impl Utils {
-    pub fn get() -> OxiResult<Dictionary> {
-        let config_path = CONFIG.with(|c| c.borrow().kitty_conf_path.clone());
-        let file = File::open(&config_path).map_err(ConfigError::from)?;
+    pub fn get(config: &Config) -> OxiResult<Dictionary> {
+        let config_path = expand_tilde(&config.kitty_conf_path);
+        if !Path::new(&config_path).exists() {
+            return Err(ConfigError::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("File not found: {}", config_path),
+            ))
+            .into());
+        }
+
+        let file = File::open(config_path).map_err(ConfigError::from)?;
         let mut content = String::new();
         BufReader::new(file)
             .read_to_string(&mut content)
@@ -25,9 +41,13 @@ impl Utils {
 
         for line in content.lines() {
             if line.starts_with("font_family ") {
-                current_font_family = line.split_whitespace().nth(1).map(NvimString::from);
+                current_font_family = Some(NvimString::from(
+                    line.trim_start_matches("font_family ").trim(),
+                ));
             } else if line.starts_with("font_size ") {
-                current_font_size = line.split_whitespace().nth(1).map(NvimString::from);
+                current_font_size = Some(NvimString::from(
+                    line.trim_start_matches("font_size ").trim(),
+                ));
             }
         }
 
@@ -69,7 +89,10 @@ impl Utils {
             .expect("Failed to execute command");
 
         let result = String::from_utf8_lossy(&output.stdout);
-        let kitty_fonts = extract_fonts(&result);
+
+        let json: Value = serde_json::from_str(&result).unwrap_or(Value::Null);
+        let kitty_fonts = Self::extract_fonts_from_json(&json);
+
         let mut compatible_fonts = Vec::new();
         let mut compatible_formatted_fonts = Vec::new();
 
@@ -86,11 +109,29 @@ impl Utils {
         (compatible_formatted_fonts, compatible_fonts)
     }
 
-    pub fn replace_font_family(new_font_family: &str) -> OxiResult<()> {
-        let config_path = CONFIG.with(|c| c.borrow().kitty_conf_path.clone());
+    fn extract_fonts_from_json(json: &Value) -> HashSet<String> {
+        let mut fonts = HashSet::new();
+
+        if let Some(family_map) = json.get("family_map").and_then(|v| v.as_object()) {
+            for (_, fonts_list) in family_map {
+                if let Some(array) = fonts_list.as_array() {
+                    for item in array {
+                        if let Some(font) = item.get("family").and_then(|v| v.as_str()) {
+                            fonts.insert(font.to_string());
+                        }
+                    }
+                }
+            }
+        }
+
+        fonts
+    }
+
+    pub fn replace_font_family(config: &Config, new_font_family: &str) -> OxiResult<()> {
+        let config_path = &config.kitty_conf_path;
         let mut content = String::new();
         {
-            let file = File::open(&config_path).map_err(ConfigError::from)?;
+            let file = File::open(config_path).map_err(ConfigError::from)?;
             BufReader::new(file)
                 .read_to_string(&mut content)
                 .map_err(ConfigError::from)?;
@@ -99,18 +140,18 @@ impl Utils {
         let modified_content =
             content.replace("font_family", &format!("font_family {}", new_font_family));
 
-        let mut file = BufWriter::new(File::create(&config_path).map_err(ConfigError::from)?);
+        let mut file = BufWriter::new(File::create(config_path).map_err(ConfigError::from)?);
         file.write_all(modified_content.as_bytes())
             .map_err(ConfigError::from)?;
 
         Ok(())
     }
 
-    pub fn replace_font_size(size: u32) -> OxiResult<()> {
-        let config_path = CONFIG.with(|c| c.borrow().kitty_conf_path.clone());
+    pub fn replace_font_size(config: &Config, size: u32) -> OxiResult<()> {
+        let config_path = &config.kitty_conf_path;
         let mut content = String::new();
         {
-            let file = File::open(&config_path).map_err(ConfigError::from)?;
+            let file = File::open(config_path).map_err(ConfigError::from)?;
             BufReader::new(file)
                 .read_to_string(&mut content)
                 .map_err(ConfigError::from)?;
@@ -118,7 +159,7 @@ impl Utils {
 
         let modified_content = content.replace("font_size", &format!("font_size {}", size));
 
-        let mut file = BufWriter::new(File::create(&config_path).map_err(ConfigError::from)?);
+        let mut file = BufWriter::new(File::create(config_path).map_err(ConfigError::from)?);
         file.write_all(modified_content.as_bytes())
             .map_err(ConfigError::from)?;
 
@@ -127,7 +168,7 @@ impl Utils {
 
     pub fn get_cached_installed_fonts(cached_fonts: &mut Option<Vec<String>>) -> &Vec<String> {
         if cached_fonts.is_none() {
-            *cached_fonts = Some(Utils::list_installed_fonts());
+            *cached_fonts = Some(Self::list_installed_fonts());
         }
         cached_fonts.as_ref().unwrap()
     }
@@ -141,4 +182,12 @@ fn extract_fonts(json_str: &str) -> HashSet<String> {
         }
     }
     fonts
+}
+
+fn expand_tilde(path: &str) -> String {
+    if path.starts_with("~") {
+        let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+        return path.replacen("~", &home_dir.to_string_lossy(), 1);
+    }
+    path.to_string()
 }
