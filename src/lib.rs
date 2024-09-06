@@ -7,7 +7,7 @@ use nvim_oxi::{
 
 use setup::Config;
 
-use self::core::App;
+use self::{core::App, utils::Utils};
 
 mod core;
 mod error;
@@ -17,27 +17,91 @@ mod utils;
 #[nvim_oxi::plugin]
 fn nekifoch() -> OxiResult<Dictionary> {
     let config = Config::default();
+
     let app = Arc::new(Mutex::new(App::new(config)));
 
-    let complete_fn = Function::from_fn(move |args: (String, String, usize)| {
-        let (arg_lead, _cmd_line, _cursor_pos) = args;
-        let completions = vec![
-            "check".into(),
-            "set_font".into(),
-            "set_size".into(),
-            "list".into(),
-        ];
-        completions
-            .into_iter()
-            .filter(|c: &String| c.starts_with(&arg_lead))
-            .collect::<Vec<_>>()
+    let notify_opts = nvim_oxi::api::opts::NotifyOpts::builder().build();
+
+    let compatible_fonts_cache = Arc::new(Mutex::new(None));
+
+    let complete_fn = Function::from_fn({
+        let compatible_fonts_cache = Arc::clone(&compatible_fonts_cache);
+        move |args: (String, String, usize)| {
+            let (arg_lead, cmd_line, cursor_pos) = args;
+
+            nvim_oxi::api::notify(
+                &format!("ARG LEAD: {arg_lead}, CMD_LINE: {cmd_line}, CURSOR_POS: {cursor_pos}"),
+                LogLevel::Info,
+                &notify_opts,
+            );
+
+            let split_cmd_line: Vec<&str> = cmd_line.split_whitespace().collect();
+            let args_after_command = &split_cmd_line[1..];
+
+            let current_arg_index = args_after_command
+                .iter()
+                .enumerate()
+                .find(|(_, &arg)| {
+                    let start_pos = cmd_line.find(arg).unwrap_or(0);
+                    let end_pos = start_pos + arg.len();
+                    cursor_pos >= start_pos && cursor_pos <= end_pos
+                })
+                .map(|(index, _)| index)
+                .unwrap_or(0);
+
+            let command = args_after_command.first().unwrap_or(&"");
+
+            nvim_oxi::api::notify(&format!("COMMAND: {command}"), LogLevel::Info, &notify_opts);
+
+            match command {
+                &"set_font" => {
+                    let mut fonts_cache = compatible_fonts_cache.lock().unwrap();
+
+                    if fonts_cache.is_none() {
+                        let installed_fonts = Utils::list_installed_fonts();
+                        let compatible_fonts =
+                            Utils::compare_fonts_with_kitty_list_fonts(installed_fonts).1;
+                        *fonts_cache = Some(compatible_fonts);
+                    }
+
+                    let fonts = fonts_cache.as_ref().unwrap();
+
+                    let last_part = arg_lead.split_whitespace().last().unwrap_or("");
+
+                    fonts
+                        .iter()
+                        .filter(|font| font.starts_with(last_part))
+                        .cloned()
+                        .collect::<Vec<_>>()
+                }
+                &"list" | &"check" | &"set_size" => {
+                    vec![]
+                }
+                _ => {
+                    if current_arg_index > 0 {
+                        vec![]
+                    } else {
+                        let completions = vec![
+                            "check".into(),
+                            "set_font".into(),
+                            "set_size".into(),
+                            "list".into(),
+                        ];
+                        completions
+                            .into_iter()
+                            .filter(|c: &String| c.starts_with(&arg_lead))
+                            .collect::<Vec<_>>()
+                    }
+                }
+            }
+        }
     });
 
     let opts = CreateCommandOpts::builder()
         .bang(true)
         .desc("Nekifoch command")
         .complete(CommandComplete::CustomList(complete_fn))
-        .nargs(CommandNArgs::ZeroOrOne)
+        .nargs(CommandNArgs::OneOrMore)
         .build();
 
     let app_handle_cmd = Arc::clone(&app);
@@ -45,18 +109,18 @@ fn nekifoch() -> OxiResult<Dictionary> {
         "Nekifoch",
         move |args: CommandArgs| {
             let mut app = app_handle_cmd.lock().unwrap();
+
             let binding = match args.args {
                 Some(a) => a,
                 None => {
-                    nvim_oxi::api::err_writeln(
-                        "Missing arguments. Expected action and optional font_family.",
-                    );
+                    nvim_oxi::api::err_writeln("Missing arguments. Expected action.");
                     return Ok(());
                 }
             };
             let mut split_args = binding.split_whitespace();
             let action = split_args.next().unwrap_or("");
             let argument = split_args.next();
+
             app.handle_command(action, argument)
         },
         &opts,

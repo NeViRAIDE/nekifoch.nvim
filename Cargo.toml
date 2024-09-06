@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-nvim-oxi = { version = "0.5", features = ["neovim-0-10", "test"] }
+nvim-oxi = { version = "0.5", features = ["neovim-0-10", "test", "neovim-nightly"] }
 thiserror = "1"
 dirs = "5"
 

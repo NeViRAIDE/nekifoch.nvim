@@ -1,4 +1,4 @@
-use nvim_oxi::{conversion::FromObject, print, Dictionary};
+use nvim_oxi::{conversion::FromObject, Dictionary};
 
 #[derive(Debug, Default)]
 pub struct Config {
@@ -13,20 +13,12 @@ impl Config {
             border: options
                 .get("borders")
                 .and_then(|border_obj| String::from_object(border_obj.clone()).ok())
-                .unwrap_or_else(|| {
-                    let default_border = "single".to_string();
-                    print!("Using default border: {}", default_border);
-                    default_border
-                }),
+                .unwrap_or_else(|| "single".to_string()),
 
             kitty_conf_path: options
                 .get("kitty_conf_path")
                 .and_then(|path_obj| String::from_object(path_obj.clone()).ok())
-                .unwrap_or_else(|| {
-                    let default_path = "~/.config/kitty/kitty.conf".to_string();
-                    print!("Using default kitty_conf_path: {}", default_path);
-                    default_path
-                }),
+                .unwrap_or_else(|| "~/.config/kitty/kitty.conf".to_string()),
 
             which_key_enable: options
                 .get("which_key")
@@ -36,11 +28,7 @@ impl Config {
                         .get("enable")
                         .and_then(|enable_obj| bool::from_object(enable_obj.clone()).ok())
                 })
-                .unwrap_or_else(|| {
-                    let default_enable = false;
-                    print!("Using default for which_key_enable: {}", default_enable);
-                    default_enable
-                }),
+                .unwrap_or(false),
         }
     }
 }
