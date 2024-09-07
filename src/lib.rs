@@ -30,7 +30,7 @@ fn nekifoch() -> OxiResult<Dictionary> {
         move |args: (String, String, usize)| {
             let (arg_lead, cmd_line, cursor_pos) = args;
 
-            nvim_oxi::api::notify(
+            let _ = nvim_oxi::api::notify(
                 &format!("ARG LEAD: {arg_lead}, CMD_LINE: {cmd_line}, CURSOR_POS: {cursor_pos}"),
                 LogLevel::Info,
                 &notify_opts,
@@ -51,7 +51,7 @@ fn nekifoch() -> OxiResult<Dictionary> {
                 }
             }
 
-            nvim_oxi::api::notify(
+            let _ = nvim_oxi::api::notify(
                 &format!("CUR ARG IND: {current_arg_index}"),
                 LogLevel::Info,
                 &notify_opts,
@@ -59,9 +59,10 @@ fn nekifoch() -> OxiResult<Dictionary> {
 
             let command = args_after_command.first().unwrap_or(&"");
 
-            nvim_oxi::api::notify(&format!("COMMAND: {command}"), LogLevel::Info, &notify_opts);
+            let _ =
+                nvim_oxi::api::notify(&format!("COMMAND: {command}"), LogLevel::Info, &notify_opts);
 
-            nvim_oxi::api::notify(
+            let _ = nvim_oxi::api::notify(
                 &format!("CUR ARG IND: {current_arg_index}"),
                 LogLevel::Info,
                 &notify_opts,
@@ -80,25 +81,19 @@ fn nekifoch() -> OxiResult<Dictionary> {
 
                     let fonts = fonts_cache.as_ref().unwrap();
 
-                    // Преобразуем arg_lead в нижний регистр
                     let search_term = arg_lead.to_lowercase();
 
-                    // Фильтруем шрифты, проверяя, содержит ли отформатированное имя шрифта искомую подстроку
                     let mut filtered_fonts: Vec<String> = fonts
                         .iter()
                         .filter(|(formatted, _)| {
-                            // Преобразуем отформатированное имя шрифта в нижний регистр
                             let formatted_lower = formatted.to_lowercase();
-                            // Проверяем, содержит ли имя шрифта искомую подстроку
                             formatted_lower.contains(&search_term)
                         })
-                        .map(|(formatted, _)| formatted.clone()) // Клонируем ключи
+                        .map(|(formatted, _)| formatted.clone())
                         .collect();
 
-                    // Сортируем шрифты
                     filtered_fonts.sort();
 
-                    // Возвращаем отсортированный список шрифтов для автодополнения
                     filtered_fonts
                 }
                 &"list" | &"check" | &"set_size" => {

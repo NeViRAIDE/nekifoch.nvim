@@ -172,7 +172,7 @@ impl Utils {
         }
     }
 
-    pub fn replace_font_size(config: &Config, size: u32) -> OxiResult<()> {
+    pub fn replace_font_size(config: &Config, size: f32) -> OxiResult<()> {
         let config_path = Self::expand_tilde(&config.kitty_conf_path);
         let mut content = String::new();
         {

@@ -29,21 +29,24 @@ impl App {
             "double" => WindowBorder::Double,
             "single" => WindowBorder::Single,
             "rounded" => WindowBorder::Rounded,
+            "solid" => WindowBorder::Solid,
+            "shadow" => WindowBorder::Shadow,
             _ => WindowBorder::None,
         };
 
         let buf = create_buf(false, true)?;
-        let config = WindowConfig::builder()
+        let win_config = WindowConfig::builder()
             .relative(WindowRelativeTo::Editor)
-            .height(10)
-            .width(15)
-            .title(WindowTitle::SimpleString("test win".into()))
-            .border(win_border)
             .row(50)
             .col(50)
+            .height(10)
+            .width(15)
+            .title(WindowTitle::SimpleString("Nekifoch".into()))
+            .title_pos(WindowTitlePosition::Center)
+            .border(win_border)
             .build();
 
-        self.window = Some(open_win(&buf, true, &config)?);
+        self.window = Some(open_win(&buf, true, &win_config)?);
 
         Ok(())
     }
@@ -93,7 +96,7 @@ impl App {
             }
             "set_size" => {
                 if let Some(size_str) = arg {
-                    if let Ok(size) = size_str.parse::<u32>() {
+                    if let Ok(size) = size_str.parse::<f32>() {
                         Utils::replace_font_size(&self.config, size)?;
                         nvim_oxi::api::out_write(nvim_oxi::String::from(format!(
                             "Font size set to {}",
