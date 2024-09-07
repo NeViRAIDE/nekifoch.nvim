@@ -24,6 +24,7 @@ fn nekifoch() -> OxiResult<Dictionary> {
 
     let compatible_fonts_cache = Arc::new(Mutex::new(None));
 
+    // TODO: move to new module
     let complete_fn = Function::from_fn({
         let compatible_fonts_cache = Arc::clone(&compatible_fonts_cache);
         move |args: (String, String, usize)| {
@@ -79,18 +80,25 @@ fn nekifoch() -> OxiResult<Dictionary> {
 
                     let fonts = fonts_cache.as_ref().unwrap();
 
-                    let last_part = arg_lead.split_whitespace().last().unwrap_or("");
+                    // Преобразуем arg_lead в нижний регистр
+                    let search_term = arg_lead.to_lowercase();
 
+                    // Фильтруем шрифты, проверяя, содержит ли отформатированное имя шрифта искомую подстроку
                     let mut filtered_fonts: Vec<String> = fonts
                         .iter()
-                        .filter(|(formatted, _)| formatted.starts_with(last_part)) // Фильтрация по отформатированным именам
+                        .filter(|(formatted, _)| {
+                            // Преобразуем отформатированное имя шрифта в нижний регистр
+                            let formatted_lower = formatted.to_lowercase();
+                            // Проверяем, содержит ли имя шрифта искомую подстроку
+                            formatted_lower.contains(&search_term)
+                        })
                         .map(|(formatted, _)| formatted.clone()) // Клонируем ключи
                         .collect();
 
-                    // Сортируем по отформатированным именам шрифтов
+                    // Сортируем шрифты
                     filtered_fonts.sort();
 
-                    // Возвращаем только отформатированные имена шрифтов для автодополнения
+                    // Возвращаем отсортированный список шрифтов для автодополнения
                     filtered_fonts
                 }
                 &"list" | &"check" | &"set_size" => {
