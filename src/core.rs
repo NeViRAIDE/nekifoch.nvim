@@ -109,10 +109,9 @@ impl App {
             }
             "list" => {
                 let installed_fonts = Utils::list_installed_fonts();
-                let mut compatible = Utils::compare_fonts_with_kitty_list_fonts(installed_fonts).1;
-                compatible.sort();
+                let compatible = Utils::compare_fonts_with_kitty_list_fonts(installed_fonts);
                 print!("Available fonts:");
-                for font in compatible {
+                for font in compatible.values() {
                     print!("  - {font}");
                 }
                 Ok(())

@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs::File,
     io::{BufReader, BufWriter, Read, Write},
     path::{Path, PathBuf},
@@ -7,17 +7,18 @@ use std::{
 };
 
 use nvim_oxi::{Dictionary, Result as OxiResult, String as NvimString};
+use regex::Regex;
 use serde_json::Value;
 
 use crate::{error::ConfigError, Config};
 
 pub struct Utils;
 
-#[derive(Debug, serde::Deserialize)]
-struct FontData {
-    #[serde(rename = "family")]
-    font_family: String,
-}
+// #[derive(Debug, serde::Deserialize)]
+// struct FontData {
+//     #[serde(rename = "family")]
+//     font_family: String,
+// }
 
 impl Utils {
     pub fn get(config: &Config) -> OxiResult<Dictionary> {
@@ -80,7 +81,7 @@ impl Utils {
 
     pub fn compare_fonts_with_kitty_list_fonts(
         installed_fonts: Vec<String>,
-    ) -> (Vec<String>, Vec<String>) {
+    ) -> HashMap<String, String> {
         let cmd = r#"kitty +runpy "from kitty.fonts.common import all_fonts_map; import json; print(json.dumps(all_fonts_map(True), indent=2))" 2>/dev/null"#;
         let output = Command::new("sh")
             .arg("-c")
@@ -93,20 +94,16 @@ impl Utils {
         let json: Value = serde_json::from_str(&result).unwrap_or(Value::Null);
         let kitty_fonts = Self::extract_fonts_from_json(&json);
 
-        let mut compatible_fonts = Vec::new();
-        let mut compatible_formatted_fonts = Vec::new();
+        let mut compatible_fonts_map = HashMap::new();
 
         for font in installed_fonts {
             if kitty_fonts.contains(&font) {
-                compatible_fonts.push(font.clone());
-            }
-            let formatted_font = font.replace(" ", "");
-            if kitty_fonts.contains(&formatted_font) {
-                compatible_formatted_fonts.push(formatted_font);
+                let formatted_font = font.replace(" ", "");
+                compatible_fonts_map.insert(formatted_font, font);
             }
         }
 
-        (compatible_formatted_fonts, compatible_fonts)
+        compatible_fonts_map
     }
 
     fn extract_fonts_from_json(json: &Value) -> HashSet<String> {
@@ -127,62 +124,121 @@ impl Utils {
         fonts
     }
 
-    pub fn replace_font_family(config: &Config, new_font_family: &str) -> OxiResult<()> {
-        let config_path = &config.kitty_conf_path;
+    pub fn replace_font_family(config: &Config, new_font_family_no_spaces: &str) -> OxiResult<()> {
+        let config_path = expand_tilde(&config.kitty_conf_path);
         let mut content = String::new();
         {
-            let file = File::open(config_path).map_err(ConfigError::from)?;
+            let file = File::open(&config_path)
+                .map_err(|e| {
+                    nvim_oxi::api::err_writeln(&format!("Error opening file: {e}"));
+                    e
+                })
+                .map_err(ConfigError::from)?;
             BufReader::new(file)
                 .read_to_string(&mut content)
+                .map_err(|e| {
+                    nvim_oxi::api::err_writeln(&format!("Error reading file: {e}"));
+                    e
+                })
                 .map_err(ConfigError::from)?;
         }
 
-        let modified_content =
-            content.replace("font_family", &format!("font_family {}", new_font_family));
+        let mut cached_fonts = None;
+        let fonts_cache = Utils::get_cached_installed_fonts(&mut cached_fonts);
 
-        let mut file = BufWriter::new(File::create(config_path).map_err(ConfigError::from)?);
-        file.write_all(modified_content.as_bytes())
-            .map_err(ConfigError::from)?;
+        let formatted_font_name = fonts_cache.get(new_font_family_no_spaces).cloned();
 
-        Ok(())
+        if let Some(new_font_family) = formatted_font_name {
+            let font_re = Regex::new(r"(?m)^font_family .*").unwrap();
+            let modified_content =
+                font_re.replace_all(&content, format!("font_family {}", new_font_family));
+
+            let mut file = BufWriter::new(
+                File::create(config_path)
+                    .map_err(|e| {
+                        nvim_oxi::api::err_writeln(&format!("Error creating file: {e}"));
+                        e
+                    })
+                    .map_err(ConfigError::from)?,
+            );
+            file.write_all(modified_content.as_bytes())
+                .map_err(|e| {
+                    nvim_oxi::api::err_writeln(&format!("Error writing to file: {e}"));
+                    e
+                })
+                .map_err(ConfigError::from)?;
+            Ok(())
+        } else {
+            Err(ConfigError::Custom("Font not found".to_string()).into())
+        }
     }
 
     pub fn replace_font_size(config: &Config, size: u32) -> OxiResult<()> {
-        let config_path = &config.kitty_conf_path;
+        let config_path = expand_tilde(&config.kitty_conf_path);
         let mut content = String::new();
         {
-            let file = File::open(config_path).map_err(ConfigError::from)?;
+            let file = File::open(&config_path)
+                .map_err(|e| {
+                    nvim_oxi::api::err_writeln(&format!("Error opening file: {e}"));
+                    e
+                })
+                .map_err(ConfigError::from)?;
             BufReader::new(file)
                 .read_to_string(&mut content)
+                .map_err(|e| {
+                    nvim_oxi::api::err_writeln(&format!("Error reading file: {e}"));
+                    e
+                })
                 .map_err(ConfigError::from)?;
         }
 
-        let modified_content = content.replace("font_size", &format!("font_size {}", size));
+        let size_re = Regex::new(r"(?m)^font_size .*").unwrap();
+        let modified_content = size_re.replace_all(&content, format!("font_size {}", size));
 
-        let mut file = BufWriter::new(File::create(config_path).map_err(ConfigError::from)?);
+        let mut file = BufWriter::new(
+            File::create(config_path)
+                .map_err(|e| {
+                    nvim_oxi::api::err_writeln(&format!("Error creating file: {e}"));
+                    e
+                })
+                .map_err(ConfigError::from)?,
+        );
         file.write_all(modified_content.as_bytes())
+            .map_err(|e| {
+                nvim_oxi::api::err_writeln(&format!("Error writing to file: {e}"));
+                e
+            })
             .map_err(ConfigError::from)?;
-
         Ok(())
     }
 
-    pub fn get_cached_installed_fonts(cached_fonts: &mut Option<Vec<String>>) -> &Vec<String> {
+    pub fn get_cached_installed_fonts(
+        cached_fonts: &mut Option<HashMap<String, String>>,
+    ) -> &HashMap<String, String> {
         if cached_fonts.is_none() {
-            *cached_fonts = Some(Self::list_installed_fonts());
+            let installed_fonts = Self::list_installed_fonts();
+            let formatted_fonts: HashMap<String, String> = installed_fonts
+                .into_iter()
+                .map(|font| {
+                    let formatted_font = font.replace(" ", ""); // Убираем пробелы для ключа
+                    (formatted_font, font) // Ключ — отформатированное имя, значение — оригинальное
+                })
+                .collect();
+            *cached_fonts = Some(formatted_fonts);
         }
         cached_fonts.as_ref().unwrap()
     }
 }
 
-fn extract_fonts(json_str: &str) -> HashSet<String> {
-    let mut fonts = HashSet::new();
-    for family in json_str.split('"').filter(|&s| s.contains("family")) {
-        if let Some(font) = family.split(':').nth(1) {
-            fonts.insert(font.trim().replace('"', "").to_string());
-        }
-    }
-    fonts
-}
+// fn extract_fonts(json_str: &str) -> HashSet<String> {
+//     let mut fonts = HashSet::new();
+//     for family in json_str.split('"').filter(|&s| s.contains("family")) {
+//         if let Some(font) = family.split(':').nth(1) {
+//             fonts.insert(font.trim().replace('"', "").to_string());
+//         }
+//     }
+//     fonts
+// }
 
 fn expand_tilde(path: &str) -> String {
     if path.starts_with("~") {
