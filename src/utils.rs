@@ -14,15 +14,9 @@ use crate::{error::ConfigError, Config};
 
 pub struct Utils;
 
-// #[derive(Debug, serde::Deserialize)]
-// struct FontData {
-//     #[serde(rename = "family")]
-//     font_family: String,
-// }
-
 impl Utils {
     pub fn get(config: &Config) -> OxiResult<Dictionary> {
-        let config_path = expand_tilde(&config.kitty_conf_path);
+        let config_path = Self::expand_tilde(&config.kitty_conf_path);
         if !Path::new(&config_path).exists() {
             return Err(ConfigError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
@@ -125,7 +119,7 @@ impl Utils {
     }
 
     pub fn replace_font_family(config: &Config, new_font_family_no_spaces: &str) -> OxiResult<()> {
-        let config_path = expand_tilde(&config.kitty_conf_path);
+        let config_path = Self::expand_tilde(&config.kitty_conf_path);
         let mut content = String::new();
         {
             let file = File::open(&config_path)
@@ -144,14 +138,17 @@ impl Utils {
         }
 
         let mut cached_fonts = None;
-        let fonts_cache = Utils::get_cached_installed_fonts(&mut cached_fonts);
+        let fonts_cache = Self::get_cached_installed_fonts(&mut cached_fonts);
 
         let formatted_font_name = fonts_cache.get(new_font_family_no_spaces).cloned();
 
         if let Some(new_font_family) = formatted_font_name {
-            let font_re = Regex::new(r"(?m)^font_family .*").unwrap();
-            let modified_content =
-                font_re.replace_all(&content, format!("font_family {}", new_font_family));
+            let font_re = Regex::new(r"(?m)^(font_family\s+)(.*)").unwrap();
+            let modified_content = font_re.replace_all(&content, |caps: &regex::Captures| {
+                let indent = &caps[1];
+                let _old_font = &caps[2];
+                format!("{}{}", indent, new_font_family)
+            });
 
             let mut file = BufWriter::new(
                 File::create(config_path)
@@ -167,6 +164,8 @@ impl Utils {
                     e
                 })
                 .map_err(ConfigError::from)?;
+
+            Self::reload_kitty();
             Ok(())
         } else {
             Err(ConfigError::Custom("Font not found".to_string()).into())
@@ -174,7 +173,7 @@ impl Utils {
     }
 
     pub fn replace_font_size(config: &Config, size: u32) -> OxiResult<()> {
-        let config_path = expand_tilde(&config.kitty_conf_path);
+        let config_path = Self::expand_tilde(&config.kitty_conf_path);
         let mut content = String::new();
         {
             let file = File::open(&config_path)
@@ -192,8 +191,13 @@ impl Utils {
                 .map_err(ConfigError::from)?;
         }
 
-        let size_re = Regex::new(r"(?m)^font_size .*").unwrap();
-        let modified_content = size_re.replace_all(&content, format!("font_size {}", size));
+        // TODO: separate as util (using twice)
+        let size_re = Regex::new(r"(?m)^(font_size\s+)(.*)").unwrap();
+        let modified_content = size_re.replace_all(&content, |caps: &regex::Captures| {
+            let indent = &caps[1];
+            let _old_size = &caps[2];
+            format!("{}{}", indent, size)
+        });
 
         let mut file = BufWriter::new(
             File::create(config_path)
@@ -209,6 +213,8 @@ impl Utils {
                 e
             })
             .map_err(ConfigError::from)?;
+
+        Self::reload_kitty();
         Ok(())
     }
 
@@ -220,30 +226,38 @@ impl Utils {
             let formatted_fonts: HashMap<String, String> = installed_fonts
                 .into_iter()
                 .map(|font| {
-                    let formatted_font = font.replace(" ", ""); // Убираем пробелы для ключа
-                    (formatted_font, font) // Ключ — отформатированное имя, значение — оригинальное
+                    let formatted_font = font.replace(" ", "");
+                    (formatted_font, font)
                 })
                 .collect();
             *cached_fonts = Some(formatted_fonts);
         }
         cached_fonts.as_ref().unwrap()
     }
-}
 
-// fn extract_fonts(json_str: &str) -> HashSet<String> {
-//     let mut fonts = HashSet::new();
-//     for family in json_str.split('"').filter(|&s| s.contains("family")) {
-//         if let Some(font) = family.split(':').nth(1) {
-//             fonts.insert(font.trim().replace('"', "").to_string());
-//         }
-//     }
-//     fonts
-// }
+    fn reload_kitty() {
+        let pidof_output = Command::new("pidof")
+            .arg("kitty")
+            .output()
+            .expect("Failed to execute `pidof`");
 
-fn expand_tilde(path: &str) -> String {
-    if path.starts_with("~") {
-        let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
-        return path.replacen("~", &home_dir.to_string_lossy(), 1);
+        if !pidof_output.stdout.is_empty() {
+            let pid_list = String::from_utf8_lossy(&pidof_output.stdout);
+
+            let pid = pid_list.trim();
+            let _ = Command::new("sh")
+                .arg("-c")
+                .arg(format!("kill -USR1 {}", pid))
+                .output()
+                .expect("Failed to execute `kill`");
+        }
     }
-    path.to_string()
+
+    fn expand_tilde(path: &str) -> String {
+        if path.starts_with("~") {
+            let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+            return path.replacen("~", &home_dir.to_string_lossy(), 1);
+        }
+        path.to_string()
+    }
 }
