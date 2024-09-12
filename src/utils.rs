@@ -6,50 +6,57 @@ use std::{
     process::Command,
 };
 
-use nvim_oxi::{Dictionary, Result as OxiResult, String as NvimString};
+use nvim_oxi::Result as OxiResult;
 use regex::Regex;
 use serde_json::Value;
 
-use crate::{error::ConfigError, Config};
+use crate::{error::PluginError, Config};
 
 pub struct Utils;
 
 impl Utils {
-    pub fn get(config: &Config) -> OxiResult<Dictionary> {
+    pub fn get(config: &Config) -> OxiResult<HashMap<String, String>> {
         let config_path = Self::expand_tilde(&config.kitty_conf_path);
         if !Path::new(&config_path).exists() {
-            return Err(ConfigError::Io(std::io::Error::new(
+            return Err(PluginError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!("File not found: {}", config_path),
             ))
             .into());
         }
 
-        let file = File::open(config_path).map_err(ConfigError::from)?;
+        let file = File::open(config_path).map_err(PluginError::from)?;
         let mut content = String::new();
         BufReader::new(file)
             .read_to_string(&mut content)
-            .map_err(ConfigError::from)?;
+            .map_err(PluginError::from)?;
 
-        let mut current_font_family = None;
-        let mut current_font_size = None;
+        let mut current_font_family: Option<String> = None;
+        let mut current_font_size: Option<String> = None;
 
         for line in content.lines() {
             if line.starts_with("font_family ") {
-                current_font_family = Some(NvimString::from(
-                    line.trim_start_matches("font_family ").trim(),
-                ));
+                current_font_family =
+                    Some(line.trim_start_matches("font_family ").trim().to_string());
             } else if line.starts_with("font_size ") {
-                current_font_size = Some(NvimString::from(
-                    line.trim_start_matches("font_size ").trim(),
-                ));
+                let size_str = line.trim_start_matches("font_size ").trim();
+                let parsed_size = size_str.parse::<f32>();
+                current_font_size = match parsed_size {
+                    Ok(_) => Some(size_str.to_string()),
+                    Err(_) => None,
+                };
             }
         }
 
-        Ok(Dictionary::from_iter(vec![
-            ("font", current_font_family.unwrap_or_default()),
-            ("size", current_font_size.unwrap_or_default()),
-        ]))
+        let mut result = HashMap::new();
+
+        result.insert("font".to_string(), current_font_family.unwrap_or_default());
+        result.insert(
+            "size".to_string(),
+            current_font_size.unwrap_or_else(|| "default".to_string()),
+        );
+
+        Ok(result)
     }
 
     pub fn list_installed_fonts() -> Vec<String> {
@@ -127,14 +134,14 @@ impl Utils {
                     nvim_oxi::api::err_writeln(&format!("Error opening file: {e}"));
                     e
                 })
-                .map_err(ConfigError::from)?;
+                .map_err(PluginError::from)?;
             BufReader::new(file)
                 .read_to_string(&mut content)
                 .map_err(|e| {
                     nvim_oxi::api::err_writeln(&format!("Error reading file: {e}"));
                     e
                 })
-                .map_err(ConfigError::from)?;
+                .map_err(PluginError::from)?;
         }
 
         let mut cached_fonts = None;
@@ -156,19 +163,19 @@ impl Utils {
                         nvim_oxi::api::err_writeln(&format!("Error creating file: {e}"));
                         e
                     })
-                    .map_err(ConfigError::from)?,
+                    .map_err(PluginError::from)?,
             );
             file.write_all(modified_content.as_bytes())
                 .map_err(|e| {
                     nvim_oxi::api::err_writeln(&format!("Error writing to file: {e}"));
                     e
                 })
-                .map_err(ConfigError::from)?;
+                .map_err(PluginError::from)?;
 
             Self::reload_kitty();
             Ok(())
         } else {
-            Err(ConfigError::Custom("Font not found".to_string()).into())
+            Err(PluginError::Custom("Font not found".to_string()).into())
         }
     }
 
@@ -181,14 +188,14 @@ impl Utils {
                     nvim_oxi::api::err_writeln(&format!("Error opening file: {e}"));
                     e
                 })
-                .map_err(ConfigError::from)?;
+                .map_err(PluginError::from)?;
             BufReader::new(file)
                 .read_to_string(&mut content)
                 .map_err(|e| {
                     nvim_oxi::api::err_writeln(&format!("Error reading file: {e}"));
                     e
                 })
-                .map_err(ConfigError::from)?;
+                .map_err(PluginError::from)?;
         }
 
         // TODO: separate as util (using twice)
@@ -205,14 +212,14 @@ impl Utils {
                     nvim_oxi::api::err_writeln(&format!("Error creating file: {e}"));
                     e
                 })
-                .map_err(ConfigError::from)?,
+                .map_err(PluginError::from)?,
         );
         file.write_all(modified_content.as_bytes())
             .map_err(|e| {
                 nvim_oxi::api::err_writeln(&format!("Error writing to file: {e}"));
                 e
             })
-            .map_err(ConfigError::from)?;
+            .map_err(PluginError::from)?;
 
         Self::reload_kitty();
         Ok(())
