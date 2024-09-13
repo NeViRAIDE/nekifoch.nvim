@@ -5,7 +5,7 @@ use nvim_oxi::{
 
 use crate::utils::Utils;
 
-use super::App;
+use super::{buffer::BufferManager, App};
 
 pub fn get_current_font(app: &mut App) -> OxiResult<()> {
     let fonts = Utils::get(&app.config)?;
@@ -32,18 +32,12 @@ pub fn set_font_family(app: &mut App, arg: Option<&str>) -> OxiResult<()> {
                 .collect();
         compatible.sort();
 
-        if let Err(err) = app.open_window(" Set font ", compatible) {
+        if let Err(err) = app.float_window.open(&app.config, " Set font ", compatible) {
             out_write(NvimString::from(format!("Error opening window: {}", err)));
         }
 
-        if let Some(window) = &app.window {
-            let buf_opts = nvim_oxi::api::opts::OptionOpts::builder()
-                .scope(nvim_oxi::api::opts::OptionScope::Local) // Указываем локальную область применения
-                .win(window.clone()) // Применяем опции к конкретному окну
-                .build();
-
-            nvim_oxi::api::set_option_value("number", false, &buf_opts)?;
-            nvim_oxi::api::set_option_value("relativenumber", false, &buf_opts)?;
+        if let Some(window) = &app.float_window.window {
+            BufferManager::configure_buffer(window)?;
         } else {
             err_writeln("Window is not open.");
         }
