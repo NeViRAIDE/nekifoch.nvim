@@ -1,3 +1,24 @@
+//! A utility module providing common operations for handling font configurations and file I/O.
+//!
+//! This module includes various helper functions for:
+//! - Reading and writing configuration files.
+//! - Modifying font settings (family and size) in configuration files.
+//! - Listing installed fonts and comparing them with fonts supported by the Kitty terminal.
+//! - Caching installed fonts for performance improvements.
+//!
+//! The core functionalities provided by this module are designed to work specifically
+//! with the configuration of the Kitty terminal, allowing the user to dynamically
+//! change the font settings and reload the terminal to apply the changes.
+//!
+//! Example:
+//! ```rust
+//! use crate::utils::Utils;
+//!
+//! let config = Config::default();
+//! let fonts = Utils::list_installed_fonts();
+//! println!("Installed fonts: {:?}", fonts);
+//! ```
+
 use std::{
     collections::{HashMap, HashSet},
     fs::File,
@@ -14,26 +35,6 @@ use serde_json::Value;
 
 use crate::{error::PluginError, Config};
 
-/// A utility module providing common operations for handling font configurations and file I/O.
-///
-/// This module includes various helper functions for:
-/// - Reading and writing configuration files.
-/// - Modifying font settings (family and size) in configuration files.
-/// - Listing installed fonts and comparing them with fonts supported by the Kitty terminal.
-/// - Caching installed fonts for performance improvements.
-///
-/// The core functionalities provided by this module are designed to work specifically
-/// with the configuration of the Kitty terminal, allowing the user to dynamically
-/// change the font settings and reload the terminal to apply the changes.
-///
-/// Example:
-/// ```rust
-/// use crate::utils::Utils;
-///
-/// let config = Config::default();
-/// let fonts = Utils::list_installed_fonts();
-/// println!("Installed fonts: {:?}", fonts);
-/// ```
 pub struct Utils;
 
 /// A lazily initialized, thread-safe cache of installed fonts.
