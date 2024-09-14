@@ -15,6 +15,7 @@ impl BufferManager {
         Ok(())
     }
 
+    // TODO: set buffer type
     pub fn configure_buffer(window: &Window) -> OxiResult<()> {
         let buf_opts = OptionOpts::builder()
             .scope(OptionScope::Local)

@@ -20,30 +20,33 @@ fn nekifoch() -> OxiResult<Dictionary> {
 
     let app = Arc::new(Mutex::new(App::new(config)));
 
-    let app_handle_cmd = Arc::clone(&app);
+    let nekifoch_cmd = {
+        let app_handle_cmd = Arc::clone(&app);
 
-    let nekifoch_cmd = move |args: CommandArgs| {
-        let mut app = app_handle_cmd.lock().unwrap();
+        move |args: CommandArgs| {
+            let binding = match args.args {
+                Some(a) => a,
+                None => {
+                    nvim_oxi::api::err_writeln("Missing arguments. Expected action.");
+                    return Ok(());
+                }
+            };
 
-        let binding = match args.args {
-            Some(a) => a,
-            None => {
-                nvim_oxi::api::err_writeln("Missing arguments. Expected action.");
-                return Ok(());
-            }
-        };
-        let mut split_args = binding.split_whitespace();
-        let action = split_args.next().unwrap_or("");
-        let argument = split_args.next();
+            let mut split_args = binding.split_whitespace();
+            let action = split_args.next().unwrap_or("").to_string();
+            let argument = split_args.next().map(|s| s.to_string());
 
-        app.handle_command(action, argument)
+            app_handle_cmd
+                .lock()
+                .unwrap()
+                .handle_command(&action, argument.as_deref())
+        }
     };
 
     let opts = CreateCommandOpts::builder()
-        // .bang(true)
         .desc("Nekifoch command")
         .complete(CommandComplete::CustomList(completion()))
-        .nargs(CommandNArgs::OneOrMore)
+        .nargs(CommandNArgs::Any)
         .build();
 
     create_user_command("Nekifoch", nekifoch_cmd, &opts)?;

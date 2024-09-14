@@ -62,8 +62,12 @@ pub fn set_font_size(app: &mut App, arg: Option<&str>) -> OxiResult<()> {
 pub fn get_fonts_list() -> OxiResult<()> {
     let installed_fonts = Utils::list_installed_fonts();
     let compatible = Utils::compare_fonts_with_kitty_list_fonts(installed_fonts);
+
+    let mut fonts: Vec<&String> = compatible.values().collect();
+    fonts.sort();
+
     print!("Available fonts:");
-    for font in compatible.values() {
+    for font in fonts {
         print!("  - {font}");
     }
     Ok(())
