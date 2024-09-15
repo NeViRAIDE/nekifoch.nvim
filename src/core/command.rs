@@ -36,7 +36,7 @@ pub enum Command {
     Close,
     Check,
     SetFont(Option<String>),
-    SetSize(f32),
+    SetSize(Option<f32>),
     List,
 }
 
@@ -60,9 +60,10 @@ impl Command {
             "close" => Some(Command::Close),
             "check" => Some(Command::Check),
             "set_font" => Some(Command::SetFont(arg.map(|s| s.to_string()))),
-            "set_size" => arg
-                .and_then(|s| s.parse::<f32>().ok())
-                .map(Command::SetSize),
+            "set_size" => {
+                let size = arg.and_then(|s| s.parse::<f32>().ok());
+                Some(Command::SetSize(size))
+            }
             "list" => Some(Command::List),
             _ => None,
         }

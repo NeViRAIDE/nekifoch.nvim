@@ -92,12 +92,18 @@ impl App {
             Command::Check => self.get_current_font(),
             Command::SetFont(font) => {
                 if font.is_some() {
-                    self.set_font_family(None)
-                } else {
                     self.set_font_family(font.as_deref())
+                } else {
+                    self.set_font_family(None)
                 }
             }
-            Command::SetSize(size) => self.set_font_size(Some(&size.to_string())),
+            Command::SetSize(size) => {
+                if let Some(size_value) = size {
+                    self.set_font_size(Some(&size_value.to_string()))
+                } else {
+                    self.set_font_size(None)
+                }
+            }
             Command::List => get_fonts_list(),
         }
     }
@@ -164,9 +170,9 @@ impl App {
                     .collect();
             compatible.sort();
 
-            if let Err(err) = self
-                .float_window
-                .open(&self.config, " Set font ", compatible)
+            if let Err(err) =
+                self.float_window
+                    .open(&self.config, " Choose font family ", compatible)
             {
                 out_write(NvimString::from(format!("Error opening window: {}", err)));
             }
@@ -208,8 +214,14 @@ impl App {
             } else {
                 err_writeln("Invalid font size argument for set_size action");
             }
-        } else {
-            err_writeln("Missing font size argument for set_size action");
+        } else if let Err(err) = self
+            .float_window
+            .open_for_input(&self.config, " Enter font size ")
+        {
+            out_write(NvimString::from(format!(
+                "Error opening input window: {}",
+                err
+            )));
         }
         Ok(())
     }
