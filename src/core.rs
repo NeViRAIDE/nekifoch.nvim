@@ -23,15 +23,19 @@
 //! - `:Nekifoch list`: List all available fonts that can be used with Kitty.
 //! - `:Nekifoch close`: Close the floating window used to display font information.
 
-use nvim_oxi::{api::err_writeln, Dictionary, Result as OxiResult};
+use nvim_oxi::{
+    api::{err_writeln, out_write},
+    print, Dictionary, Result as OxiResult, String as NvimString,
+};
 
-use crate::setup::Config;
+use crate::{setup::Config, utils::Utils};
 
-use commands::{get_current_font, get_fonts_list, set_font_family, set_font_size};
+use buffer::BufferManager;
+use command::{get_fonts_list, Command};
 use window::FloatWindow;
 
 mod buffer;
-mod commands;
+pub mod command;
 pub mod completion;
 mod mapping;
 mod window;
@@ -82,17 +86,131 @@ impl App {
     ///
     /// Based on the command and argument passed, the corresponding action (such as
     /// setting the font or closing the window) is performed.
-    pub fn handle_command(&mut self, cmd: &str, arg: Option<&str>) -> OxiResult<()> {
+    pub fn handle_command(&mut self, cmd: Command) -> OxiResult<()> {
         match cmd {
-            "close" => self.float_window.close(),
-            "check" => get_current_font(self),
-            "set_font" => set_font_family(self, arg),
-            "set_size" => set_font_size(self, arg),
-            "list" => get_fonts_list(),
-            _ => {
-                err_writeln(&format!("Unknown command: {}", cmd));
-                Ok(())
+            Command::Close => self.float_window.close(),
+            Command::Check => self.get_current_font(),
+            Command::SetFont(font) => {
+                if font.is_some() {
+                    self.set_font_family(None)
+                } else {
+                    self.set_font_family(font.as_deref())
+                }
+            }
+            Command::SetSize(size) => self.set_font_size(Some(&size.to_string())),
+            Command::List => get_fonts_list(),
+        }
+    }
+
+    /// Retrieves and displays the current font family and size from the Kitty terminal configuration.
+    ///
+    /// This method queries the current font settings stored in the Kitty terminal configuration
+    /// and prints the font family and size in the Neovim output. The font information is fetched
+    /// using a utility function from the `Utils` module, which interacts with the configuration
+    /// specified in the `config` field of the `App` structure.
+    ///
+    /// # Returns
+    ///
+    /// Returns an `OxiResult<()>` to indicate success or failure. If an error occurs while fetching
+    /// the font data, the error will be propagated up to the caller.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error if the `Utils::get` function fails to retrieve the font
+    /// configuration from Kitty.
+    fn get_current_font(&mut self) -> OxiResult<()> {
+        let fonts = Utils::get(&self.config)?;
+        print!(
+            "\nFont family: {:?}\nFont size: {:?}\n",
+            fonts["font"], fonts["size"]
+        );
+        Ok(())
+    }
+
+    /// Sets the font family in the Kitty terminal configuration or opens a floating window to select a font.
+    ///
+    /// If a font family is provided as an argument, it will update the font in the Kitty terminal configuration
+    /// using the `Utils::replace_font_family` function. If no argument is provided, a floating window with a list of
+    /// available fonts will be opened, allowing the user to select one. The selected font will then be applied.
+    ///
+    /// # Arguments
+    ///
+    /// * `arg` - An optional string containing the font family to set. If `None`, a font selection window will be displayed.
+    ///
+    /// # Returns
+    ///
+    /// Returns an `OxiResult<()>` to indicate success or failure. If the font family cannot be updated or the floating
+    /// window cannot be opened, an error will be propagated.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The font family cannot be replaced.
+    /// - The floating window fails to open.
+    /// - The window buffer cannot be configured.
+    fn set_font_family(&mut self, arg: Option<&str>) -> OxiResult<()> {
+        if let Some(font_family) = arg {
+            Utils::replace_font_family(&self.config, font_family)?;
+            out_write(NvimString::from(format!(
+                "Font family set to {}",
+                font_family
+            )));
+        } else {
+            let installed_fonts = Utils::list_installed_fonts();
+            let mut compatible: Vec<String> =
+                Utils::compare_fonts_with_kitty_list_fonts(installed_fonts)
+                    .values()
+                    .cloned()
+                    .collect();
+            compatible.sort();
+
+            if let Err(err) = self
+                .float_window
+                .open(&self.config, " Set font ", compatible)
+            {
+                out_write(NvimString::from(format!("Error opening window: {}", err)));
+            }
+
+            if let Some(window) = &self.float_window.window {
+                BufferManager::configure_buffer(window)?;
+            } else {
+                err_writeln("Window is not open.");
             }
         }
+        Ok(())
+    }
+
+    /// Sets the font size in the Kitty terminal configuration.
+    ///
+    /// This method updates the font size in the Kitty terminal configuration based on the provided argument.
+    /// The argument should be a string that can be parsed into a floating-point number (i.e., the font size).
+    /// If the argument is missing or invalid, an error message will be displayed in Neovim.
+    ///
+    /// # Arguments
+    ///
+    /// * `arg` - An optional string containing the font size to set. If `None`, an error message will be printed.
+    ///
+    /// # Returns
+    ///
+    /// Returns an `OxiResult<()>` to indicate success or failure. If an invalid font size is provided, an error message
+    /// will be printed instead.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The font size cannot be parsed as a floating-point number.
+    /// - The font size argument is missing.
+    fn set_font_size(&mut self, arg: Option<&str>) -> OxiResult<()> {
+        if let Some(size_str) = arg {
+            if let Ok(size) = size_str.parse::<f32>() {
+                Utils::replace_font_size(&self.config, size)?;
+                out_write(NvimString::from(format!("Font size set to {}", size)));
+            } else {
+                err_writeln("Invalid font size argument for set_size action");
+            }
+        } else {
+            err_writeln("Missing font size argument for set_size action");
+        }
+        Ok(())
     }
 }

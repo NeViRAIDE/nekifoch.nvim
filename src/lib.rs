@@ -1,13 +1,13 @@
 use std::sync::{Arc, Mutex};
 
 use nvim_oxi::{
-    api::{create_user_command, opts::CreateCommandOpts, types::*},
+    api::{create_user_command, err_writeln, opts::CreateCommandOpts, types::*},
     Dictionary, Error as OxiError, Function, Result as OxiResult,
 };
 
 use setup::Config;
 
-use core::{completion::completion, App};
+use core::{command::Command, completion::completion, App};
 
 mod core;
 mod error;
@@ -23,7 +23,7 @@ fn nekifoch() -> OxiResult<Dictionary> {
     let nekifoch_cmd = {
         let app_handle_cmd = Arc::clone(&app);
 
-        move |args: CommandArgs| {
+        move |args: CommandArgs| -> OxiResult<()> {
             let binding = match args.args {
                 Some(a) => a,
                 None => {
@@ -36,10 +36,15 @@ fn nekifoch() -> OxiResult<Dictionary> {
             let action = split_args.next().unwrap_or("").to_string();
             let argument = split_args.next().map(|s| s.to_string());
 
-            app_handle_cmd
-                .lock()
-                .unwrap()
-                .handle_command(&action, argument.as_deref())
+            let command = Command::from_str(&action, argument.as_deref());
+
+            if let Some(command) = command {
+                app_handle_cmd.lock().unwrap().handle_command(command)?;
+            } else {
+                err_writeln(&format!("Unknown command: {}", action));
+            };
+
+            Ok(())
         }
     };
 

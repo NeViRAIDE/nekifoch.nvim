@@ -38,7 +38,7 @@ fn setup_enter_key_handler(buf: &Buffer, app: &mut App) -> OxiResult<()> {
 
     // Вызов команды set_font
     let selected_line = nvim_oxi::api::get_current_line()?; // Получаем текущую строку
-    app.handle_command("set_font", Some(&selected_line))?;
+                                                            // app.handle_command("set_font", Some(&selected_line))?;
 
     Ok(())
 }
@@ -50,7 +50,7 @@ fn setup_close_key_handler(buf: &Buffer, window: Window, app: &mut App) -> OxiRe
     // Обрабатываем нажатие 'q' или 'Esc' для закрытия окна
     create_autocmd(vec!["BufWinLeave"], &opts)?;
 
-    app.handle_command("close", None)?;
+    // app.handle_command("close", None)?;
 
     Ok(())
 }
