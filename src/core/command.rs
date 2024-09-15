@@ -33,6 +33,7 @@ use crate::utils::Utils;
 /// - `List`: Lists all available fonts that can be used in Kitty.
 #[derive(Debug)]
 pub enum Command {
+    MainMenu,
     Close,
     Check,
     SetFont(Option<String>),
@@ -57,6 +58,7 @@ pub enum Command {
 impl Command {
     pub fn from_str(cmd: &str, arg: Option<&str>) -> Option<Self> {
         match cmd {
+            "" => Some(Command::MainMenu),
             "close" => Some(Command::Close),
             "check" => Some(Command::Check),
             "set_font" => Some(Command::SetFont(arg.map(|s| s.to_string()))),

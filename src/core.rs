@@ -88,6 +88,7 @@ impl App {
     /// setting the font or closing the window) is performed.
     pub fn handle_command(&mut self, cmd: Command) -> OxiResult<()> {
         match cmd {
+            Command::MainMenu => self.show_main_menu(),
             Command::Close => self.float_window.close(),
             Command::Check => self.get_current_font(),
             Command::SetFont(font) => {
@@ -106,6 +107,26 @@ impl App {
             }
             Command::List => get_fonts_list(),
         }
+    }
+
+    fn show_main_menu(&mut self) -> OxiResult<()> {
+        let menu_options = vec![
+            "Check current font".to_string(),
+            "Set font family".to_string(),
+            "Set font size".to_string(),
+            "Show installed fonts".to_string(),
+        ];
+
+        self.float_window
+            .open(&self.config, " NeKiFoCh ", menu_options)?;
+
+        if let Some(window) = &self.float_window.window {
+            BufferManager::configure_buffer(window)?;
+            let mut buf = window.get_buf()?;
+            mapping::set_keymaps_for_menu(&mut buf)?;
+        }
+
+        Ok(())
     }
 
     /// Retrieves and displays the current font family and size from the Kitty terminal configuration.
@@ -223,6 +244,13 @@ impl App {
                 err
             )));
         }
+
+        if let Some(window) = &self.float_window.window {
+            BufferManager::configure_buffer(window)?;
+        } else {
+            err_writeln("Window is not open.");
+        }
+
         Ok(())
     }
 }

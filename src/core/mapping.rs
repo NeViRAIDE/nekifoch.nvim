@@ -45,6 +45,22 @@ pub fn set_keymaps_for_buffer(buf: &mut Buffer, enter_cmd: &str, close_cmd: &str
     Ok(())
 }
 
+pub fn set_keymaps_for_menu(buf: &mut Buffer) -> OxiResult<()> {
+    let opts = SetKeymapOpts::builder().noremap(true).silent(true).build();
+
+    buf.set_keymap(
+        Mode::Normal,
+        "<CR>",
+        r#"<cmd>lua local selection = vim.api.nvim_get_current_line(); if selection == "Check current font" then vim.cmd('Nekifoch check') elseif selection == "Show installed fonts" then vim.cmd('Nekifoch list') elseif selection == "Set font family" then vim.cmd('Nekifoch close');vim.cmd('Nekifoch set_font') elseif selection == "Set font size" then vim.cmd('Nekifoch close');vim.cmd('Nekifoch set_size') end<CR>"#,
+        &opts,
+    )?;
+
+    buf.set_keymap(Mode::Normal, "q", "<cmd>Nekifoch close<CR>", &opts)?;
+    buf.set_keymap(Mode::Normal, "<Esc>", "<cmd>Nekifoch close<CR>", &opts)?;
+
+    Ok(())
+}
+
 // pub fn default_keymaps_for_font(buf: &mut Buffer) -> OxiResult<()> {
 //     let enter_cmd = r#"<cmd>lua local font_name = vim.api.nvim_get_current_line(); local formatted_font_name = font_name:gsub('%s+', ''); vim.cmd('Nekifoch set_font ' .. formatted_font_name)<CR>"#;
 //     set_keymaps_for_buffer(buf, enter_cmd, CLOSE_COMMAND)

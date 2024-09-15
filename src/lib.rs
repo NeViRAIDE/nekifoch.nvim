@@ -26,10 +26,7 @@ fn nekifoch() -> OxiResult<Dictionary> {
         move |args: CommandArgs| -> OxiResult<()> {
             let binding = match args.args {
                 Some(a) => a,
-                None => {
-                    nvim_oxi::api::err_writeln("Missing arguments. Expected action.");
-                    return Ok(());
-                }
+                None => "".to_string(),
             };
 
             let mut split_args = binding.split_whitespace();
