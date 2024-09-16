@@ -1,5 +1,14 @@
 <h1 align="center">NeKiFoCh</h1>
 <h3 align="center">Neovim Kitty Font Changer</h3>
+
+<div align="center">
+
+[![Release](https://github.com/NeViRAIDE/nekifoch.nvim/actions/workflows/release.yml/badge.svg)](https://github.com/NeViRAIDE/nekifoch.nvim/actions/workflows/ci.yml)
+![License](https://img.shields.io/github/license/NeViRAIDE/nekifoch.nvim)
+![Neovim version](https://img.shields.io/badge/Neovim-0.10-57A143?logo=neovim)
+
+</div>
+
 <hr>
 
 <p align="center">
