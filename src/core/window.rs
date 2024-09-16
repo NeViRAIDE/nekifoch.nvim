@@ -9,7 +9,7 @@ use crate::{error::PluginError, setup::Config};
 
 use super::{
     buffer::BufferManager,
-    mapping::{set_keymaps_for_buffer, CLOSE_COMMAND},
+    mapping::{set_keymaps_for_buffer, CLOSE_COMMAND, RETURN_COMMAND},
 };
 
 #[derive(Debug)]
@@ -21,11 +21,11 @@ pub struct WindowConfigParams<'a> {
     pub title: &'a str,
     pub height: usize,
     pub width: usize,
-    pub insert_mode: bool,
     pub set_keymaps: bool,
     pub content: Option<&'a str>,
     pub enter_cmd: Option<&'a str>,
     pub close_cmd: Option<&'a str>,
+    pub back_cmd: Option<&'a str>,
 }
 
 impl<'a> WindowConfigParams<'a> {
@@ -34,17 +34,12 @@ impl<'a> WindowConfigParams<'a> {
             title,
             height,
             width,
-            insert_mode: false,
             set_keymaps: false,
             content: None,
             enter_cmd: None,
             close_cmd: Some(CLOSE_COMMAND),
+            back_cmd: Some(RETURN_COMMAND),
         }
-    }
-
-    pub fn with_insert_mode(mut self, insert: bool) -> Self {
-        self.insert_mode = insert;
-        self
     }
 
     pub fn with_keymaps(mut self, keymaps: bool) -> Self {
@@ -110,7 +105,9 @@ impl FloatWindow {
         if params.set_keymaps {
             if let Some(enter_cmd) = params.enter_cmd {
                 if let Some(close_cmd) = params.close_cmd {
-                    set_keymaps_for_buffer(&mut buf, enter_cmd, close_cmd)?;
+                    if let Some(back_cmd) = params.back_cmd {
+                        set_keymaps_for_buffer(&mut buf, enter_cmd, close_cmd, back_cmd)?;
+                    }
                 }
             }
         }
@@ -133,10 +130,6 @@ impl FloatWindow {
 
         self.window = Some(open_win(&buf, true, &win_config)?);
 
-        if params.insert_mode {
-            nvim_oxi::api::command("startinsert")?;
-        }
-
         Ok(())
     }
 
@@ -154,7 +147,6 @@ impl FloatWindow {
 
     pub fn open_for_input(&mut self, config: &Config, title: &str) -> OxiResult<()> {
         let params = WindowConfigParams::new(title, 2, 20)
-        .with_insert_mode(true)
         .with_keymaps(true)
         .with_enter_cmd(Some(r#"<cmd>lua local font_size = vim.api.nvim_get_current_line(); vim.cmd('Nekifoch set_size ' .. font_size)<CR>"#));
 

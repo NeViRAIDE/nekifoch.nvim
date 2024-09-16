@@ -118,7 +118,7 @@ impl App {
         ];
 
         self.float_window
-            .open(&self.config, " NeKiFoCh ", menu_options)?;
+            .open(&self.config, " Nekifoch ", menu_options)?;
 
         if let Some(window) = &self.float_window.window {
             BufferManager::configure_buffer(window)?;
@@ -211,11 +211,12 @@ impl App {
     ///
     /// This method updates the font size in the Kitty terminal configuration based on the provided argument.
     /// The argument should be a string that can be parsed into a floating-point number (i.e., the font size).
-    /// If the argument is missing or invalid, an error message will be displayed in Neovim.
+    /// If the argument is missing, a float window will be displayed in Neovim.
+    /// If the argument is invalid, an error message will be displayed in Neovim.
     ///
     /// # Arguments
     ///
-    /// * `arg` - An optional string containing the font size to set. If `None`, an error message will be printed.
+    /// * `arg` - An optional string containing the font size to set. If `None`, float window will be opened.
     ///
     /// # Returns
     ///

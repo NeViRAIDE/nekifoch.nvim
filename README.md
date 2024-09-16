@@ -1,4 +1,4 @@
-<h1 align="center">NeKiFoCh</h1>
+<h1 align="center" id='top'>NeKiFoCh</h1>
 <h3 align="center">Neovim Kitty Font Changer</h3>
 
 <div align="center">
@@ -47,6 +47,11 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 }
 ```
 
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
+
 <h2 align=center id='defaults'>Default config values</h2>
 
 ```lua
@@ -58,6 +63,10 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
     borders = 'none', --available values are: 'rounded', 'single', 'double', 'shadow', 'solid', 'none'
 }
 ```
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
 
 <div align="center">
 
@@ -110,6 +119,10 @@ Nekifoch provides the `:Nekifoch` command with the following syntax:
 :Nekifoch list
 ```
 
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
 
 <div align="center">
 
@@ -146,6 +159,10 @@ or
 ```
 
 Replace '~/.config/kitty/kitty.conf' with the actual path to your Kitty terminal configuration.
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
 
 <div align="center">
 
@@ -208,6 +225,10 @@ or
 Developed by [RAprogramm](https://github.com/RAprogramm). Contributions are welcome.
 
 </div>
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
 
 <div align="center">
 
@@ -222,6 +243,11 @@ For in-depth details and usage instructions, refer to the documentation.
 <hr>
 
 Enhance your Kitty terminal experience with Nekifoch
+
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
 
 
 <div align="center">
@@ -242,3 +268,8 @@ If you find this plugin helpful and would like to support its development, you c
 Your support is greatly appreciated!
 
 </div>
+
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>

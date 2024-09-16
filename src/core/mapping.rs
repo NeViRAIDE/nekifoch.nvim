@@ -4,8 +4,14 @@ use nvim_oxi::{
 };
 
 pub const CLOSE_COMMAND: &str = "<cmd>Nekifoch close<cr>";
+pub const RETURN_COMMAND: &str = r#"<cmd>lua vim.cmd('Nekifoch close'); vim.cmd('Nekifoch')<cr>"#;
 
-pub fn set_keymaps_for_buffer(buf: &mut Buffer, enter_cmd: &str, close_cmd: &str) -> OxiResult<()> {
+pub fn set_keymaps_for_buffer(
+    buf: &mut Buffer,
+    enter_cmd: &str,
+    close_cmd: &str,
+    back_cmd: &str,
+) -> OxiResult<()> {
     let opts = SetKeymapOpts::builder().noremap(true).silent(true).build();
 
     // Set the keymap for the Enter key using the provided `enter_cmd`.
@@ -13,7 +19,7 @@ pub fn set_keymaps_for_buffer(buf: &mut Buffer, enter_cmd: &str, close_cmd: &str
 
     // Set the keymap for the 'q' key or 'Esc' key using the provided `close_cmd`.
     buf.set_keymap(Mode::Normal, "q", close_cmd, &opts)?;
-    buf.set_keymap(Mode::Normal, "<Esc>", close_cmd, &opts)?;
+    buf.set_keymap(Mode::Normal, "<Esc>", back_cmd, &opts)?;
 
     // Optional navigation keymaps, if needed.
     buf.set_keymap(Mode::Normal, "j", "gj", &opts)?;
@@ -36,8 +42,8 @@ pub fn set_keymaps_for_menu(buf: &mut Buffer) -> OxiResult<()> {
         &opts,
     )?;
 
-    buf.set_keymap(Mode::Normal, "q", "<cmd>Nekifoch close<CR>", &opts)?;
-    buf.set_keymap(Mode::Normal, "<Esc>", "<cmd>Nekifoch close<CR>", &opts)?;
+    buf.set_keymap(Mode::Normal, "q", CLOSE_COMMAND, &opts)?;
+    buf.set_keymap(Mode::Normal, "<Esc>", CLOSE_COMMAND, &opts)?;
 
     Ok(())
 }
