@@ -1,0 +1,105 @@
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+name: Test
+
+jobs:
+  build:
+    name: Ubuntu test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install latest rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          default: true
+          override: true
+
+      - name: Install Neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: build
+        run: cargo build && mv target/debug/libnekifoch.so lua/nekifoch.so
+
+      - name: Test with nvim
+        run: nvim -u NONE --headless +":set rtp+=./" +":lua require'nekifoch'" +quit
+        env:
+          RUST_BACKTRACE: 1
+
+  # build-win:
+  #   name: Windows test
+  #   runs-on: windows-latest
+  #
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v1
+  #
+  #     - name: Install latest rust toolchain
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
+  #         target: x86_64-pc-windows-gnu
+  #         default: true
+  #         override: true
+  #
+  #     - name: Install Neovim
+  #       uses: rhysd/action-setup-vim@v1
+  #       with:
+  #         neovim: true
+  #         version: stable
+  #
+  #     - name: Build
+  #       run: cargo build
+  #
+  #     - name: Copy file
+  #       run: copy target\debug\nekifoch.dll .\lua
+  #       shell: cmd
+  #
+  #     - name: Test with nvim
+  #       run: nvim -u NONE --headless +":set rtp+=./" +":lua require'nekifoch'" +quit
+  #       shell: bash
+  #       env:
+  #         RUST_BACKTRACE: 1
+
+  build-mac:
+    name: MacOS test
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install latest rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-apple-darwin
+          default: true
+          override: true
+
+      - name: Install Neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Install missing dependencies
+        run: brew install pkg-config
+
+      - name: build
+        run: cargo build && mv target/debug/libnekifoch.dylib lua/nekifoch.so
+
+      - name: Test with nvim
+        run: nvim -u NONE --headless +":set rtp+=./" +":lua require'nekifoch'" +quit
+        env:
+          RUST_BACKTRACE: 1
