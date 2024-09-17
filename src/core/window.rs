@@ -9,7 +9,10 @@ use crate::{error::PluginError, setup::Config};
 
 use super::{
     buffer::BufferManager,
-    mapping::{set_keymaps_for_buffer, CLOSE_COMMAND, RETURN_COMMAND},
+    mapping::{
+        set_keymaps_for_buffer, set_keymaps_for_size_control, CLOSE_COMMAND, RETURN_COMMAND,
+        SIZE_DOWN_COMMAND, SIZE_UP_COMMAND,
+    },
 };
 
 #[derive(Debug)]
@@ -81,7 +84,7 @@ impl FloatWindow {
         Ok((row, col))
     }
 
-    fn open_window(&mut self, config: &Config, params: WindowConfigParams) -> OxiResult<()> {
+    fn open_window(&mut self, config: &Config, params: &WindowConfigParams) -> OxiResult<()> {
         if self.window.is_some() {
             err_writeln("Window is already open");
             return Ok(());
@@ -142,15 +145,38 @@ impl FloatWindow {
         .with_keymaps(true)
         .with_enter_cmd(Some(r#"<cmd>lua local font_name = vim.api.nvim_get_current_line(); local formatted_font_name = font_name:gsub('%s+', ''); vim.cmd('Nekifoch set_font ' .. formatted_font_name)<CR>"#));
 
-        self.open_window(config, params)
+        self.open_window(config, &params)
     }
 
-    pub fn open_for_input(&mut self, config: &Config, title: &str) -> OxiResult<()> {
-        let params = WindowConfigParams::new(title, 2, 20)
-        .with_keymaps(true)
-        .with_enter_cmd(Some(r#"<cmd>lua local font_size = vim.api.nvim_get_current_line(); vim.cmd('Nekifoch set_size ' .. font_size)<CR>"#));
+    pub fn open_for_input(
+        &mut self,
+        config: &Config,
+        title: &str,
+        current_size: f32,
+    ) -> OxiResult<()> {
+        let content = format!("\t\t\t\t\nCurrent size: [ {} ]\n\t\t\t\t", current_size);
 
-        self.open_window(config, params)
+        let params = WindowConfigParams::new(title, 3, 25)
+            .with_content(Some(&content))
+            .with_keymaps(true);
+
+        self.open_window(config, &params)?;
+
+        if let Some(window) = &self.window {
+            let mut buf = window.get_buf()?;
+
+            self.window.as_mut().expect("no window").set_cursor(2, 0)?;
+
+            set_keymaps_for_size_control(
+                &mut buf,
+                params.back_cmd.unwrap(),
+                params.close_cmd.unwrap(),
+                SIZE_UP_COMMAND,
+                SIZE_DOWN_COMMAND,
+            )?;
+        }
+
+        Ok(())
     }
 
     pub fn close(&mut self) -> OxiResult<()> {

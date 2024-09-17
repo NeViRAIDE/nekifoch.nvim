@@ -47,3 +47,26 @@ pub fn set_keymaps_for_menu(buf: &mut Buffer) -> OxiResult<()> {
 
     Ok(())
 }
+
+pub const SIZE_UP_COMMAND: &str = "<cmd>Nekifoch size_up<CR>";
+pub const SIZE_DOWN_COMMAND: &str = "<cmd>Nekifoch size_down<CR>";
+
+pub fn set_keymaps_for_size_control(
+    buf: &mut Buffer,
+    back_cmd: &str,
+    close_cmd: &str,
+    size_up_cmd: &str,
+    size_down_cmd: &str,
+) -> OxiResult<()> {
+    let opts = SetKeymapOpts::builder().noremap(true).silent(true).build();
+
+    buf.set_keymap(Mode::Normal, "q", close_cmd, &opts)?;
+    buf.set_keymap(Mode::Normal, "<Esc>", back_cmd, &opts)?;
+
+    buf.set_keymap(Mode::Normal, "<Up>", size_up_cmd, &opts)?;
+    buf.set_keymap(Mode::Normal, "<Down>", size_down_cmd, &opts)?;
+    buf.set_keymap(Mode::Normal, "k", size_up_cmd, &opts)?;
+    buf.set_keymap(Mode::Normal, "j", size_down_cmd, &opts)?;
+
+    Ok(())
+}

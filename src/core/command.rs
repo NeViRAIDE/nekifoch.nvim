@@ -34,6 +34,8 @@ use crate::utils::Utils;
 #[derive(Debug)]
 pub enum Command {
     MainMenu,
+    SizeUp,
+    SizeDown,
     Close,
     Check,
     SetFont(Option<String>),
@@ -59,6 +61,8 @@ impl Command {
     pub fn from_str(cmd: &str, arg: Option<&str>) -> Option<Self> {
         match cmd {
             "" => Some(Command::MainMenu),
+            "size_up" => Some(Command::SizeUp),
+            "size_down" => Some(Command::SizeDown),
             "close" => Some(Command::Close),
             "check" => Some(Command::Check),
             "set_font" => Some(Command::SetFont(arg.map(|s| s.to_string()))),

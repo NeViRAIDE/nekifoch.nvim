@@ -58,7 +58,7 @@ mod window;
 #[derive(Debug)]
 pub struct App {
     config: Config,
-    float_window: FloatWindow,
+    pub float_window: FloatWindow,
 }
 
 impl App {
@@ -89,6 +89,8 @@ impl App {
     pub fn handle_command(&mut self, cmd: Command) -> OxiResult<()> {
         match cmd {
             Command::MainMenu => self.show_main_menu(),
+            Command::SizeUp => self.size_up(),
+            Command::SizeDown => self.size_down(),
             Command::Close => self.float_window.close(),
             Command::Check => self.get_current_font(),
             Command::SetFont(font) => {
@@ -207,27 +209,6 @@ impl App {
         Ok(())
     }
 
-    /// Sets the font size in the Kitty terminal configuration.
-    ///
-    /// This method updates the font size in the Kitty terminal configuration based on the provided argument.
-    /// The argument should be a string that can be parsed into a floating-point number (i.e., the font size).
-    /// If the argument is missing, a float window will be displayed in Neovim.
-    /// If the argument is invalid, an error message will be displayed in Neovim.
-    ///
-    /// # Arguments
-    ///
-    /// * `arg` - An optional string containing the font size to set. If `None`, float window will be opened.
-    ///
-    /// # Returns
-    ///
-    /// Returns an `OxiResult<()>` to indicate success or failure. If an invalid font size is provided, an error message
-    /// will be printed instead.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if:
-    /// - The font size cannot be parsed as a floating-point number.
-    /// - The font size argument is missing.
     fn set_font_size(&mut self, arg: Option<&str>) -> OxiResult<()> {
         if let Some(size_str) = arg {
             if let Ok(size) = size_str.parse::<f32>() {
@@ -236,18 +217,75 @@ impl App {
             } else {
                 err_writeln("Invalid font size argument for set_size action");
             }
-        } else if let Err(err) = self
-            .float_window
-            .open_for_input(&self.config, " Enter font size ")
-        {
-            out_write(NvimString::from(format!(
-                "Error opening input window: {}",
-                err
-            )));
+        } else {
+            let fonts = Utils::get(&self.config)?;
+            if let Some(current_size_str) = fonts.get("size") {
+                if let Ok(current_size) = current_size_str.parse::<f32>() {
+                    self.float_window.open_for_input(
+                        &self.config,
+                        " Change font size ",
+                        current_size,
+                    )?;
+                } else {
+                    err_writeln("Invalid current font size in config.");
+                }
+            } else {
+                err_writeln("Current font size not found.");
+            }
         }
 
         if let Some(window) = &self.float_window.window {
             BufferManager::configure_buffer(window)?;
+        } else {
+            err_writeln("Window is not open.");
+        }
+
+        Ok(())
+    }
+
+    pub fn size_up(&mut self) -> OxiResult<()> {
+        let fonts = Utils::get(&self.config)?;
+
+        if let Some(size_str) = fonts.get("size") {
+            if let Ok(current_size) = size_str.parse::<f32>() {
+                let new_size = current_size + 0.5;
+                self.set_font_size(Some(&new_size.to_string()))?;
+                self.update_size_display(new_size)?;
+            } else {
+                err_writeln("Invalid font size found in the configuration file.");
+            }
+        } else {
+            err_writeln("Font size not found in the configuration.");
+        }
+
+        Ok(())
+    }
+
+    pub fn size_down(&mut self) -> OxiResult<()> {
+        let fonts = Utils::get(&self.config)?;
+
+        if let Some(size_str) = fonts.get("size") {
+            if let Ok(current_size) = size_str.parse::<f32>() {
+                let new_size = current_size - 0.5;
+                self.set_font_size(Some(&new_size.to_string()))?;
+                self.update_size_display(new_size)?;
+            } else {
+                err_writeln("Invalid font size found in the configuration file.");
+            }
+        } else {
+            err_writeln("Font size not found in the configuration.");
+        }
+
+        Ok(())
+    }
+
+    fn update_size_display(&mut self, new_size: f32) -> OxiResult<()> {
+        if let Some(window) = &self.float_window.window {
+            let content = format!("\t\t\t\t\nCurrent size: [ {} ]\n\t\t\t\t", new_size);
+            let mut buf = window.get_buf()?;
+            BufferManager::set_buffer_content(&mut buf, &content)?;
+
+            // nvim_oxi::api::command("redraw!")?;
         } else {
             err_writeln("Window is not open.");
         }
