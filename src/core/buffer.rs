@@ -24,6 +24,7 @@ impl BufferManager {
 
         set_option_value("number", false, &buf_opts)?;
         set_option_value("relativenumber", false, &buf_opts)?;
+        // set_option_value("cursorline", false, &buf_opts)?;
         Ok(())
     }
 }

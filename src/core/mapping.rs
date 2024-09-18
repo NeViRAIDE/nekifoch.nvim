@@ -3,8 +3,11 @@ use nvim_oxi::{
     Result as OxiResult,
 };
 
-pub const CLOSE_COMMAND: &str = "<cmd>Nekifoch close<cr>";
-pub const RETURN_COMMAND: &str = r#"<cmd>lua vim.cmd('Nekifoch close'); vim.cmd('Nekifoch')<cr>"#;
+pub const CLOSE_COMMAND: &str = "<cmd>lua vim.cmd('Nekifoch close')<cr>";
+pub const BACK_COMMAND: &str = r#"<cmd>lua vim.cmd('Nekifoch close'); vim.cmd('Nekifoch')<cr>"#;
+
+pub const SIZE_UP_COMMAND: &str = "<cmd>Nekifoch size_up<CR>";
+pub const SIZE_DOWN_COMMAND: &str = "<cmd>Nekifoch size_down<CR>";
 
 pub fn set_keymaps_for_buffer(
     buf: &mut Buffer,
@@ -20,6 +23,7 @@ pub fn set_keymaps_for_buffer(
     // Set the keymap for the 'q' key or 'Esc' key using the provided `close_cmd`.
     buf.set_keymap(Mode::Normal, "q", close_cmd, &opts)?;
     buf.set_keymap(Mode::Normal, "<Esc>", back_cmd, &opts)?;
+    buf.set_keymap(Mode::Normal, "<BS>", back_cmd, &opts)?;
 
     // Optional navigation keymaps, if needed.
     buf.set_keymap(Mode::Normal, "j", "gj", &opts)?;
@@ -48,9 +52,6 @@ pub fn set_keymaps_for_menu(buf: &mut Buffer) -> OxiResult<()> {
     Ok(())
 }
 
-pub const SIZE_UP_COMMAND: &str = "<cmd>Nekifoch size_up<CR>";
-pub const SIZE_DOWN_COMMAND: &str = "<cmd>Nekifoch size_down<CR>";
-
 pub fn set_keymaps_for_size_control(
     buf: &mut Buffer,
     back_cmd: &str,
@@ -62,6 +63,7 @@ pub fn set_keymaps_for_size_control(
 
     buf.set_keymap(Mode::Normal, "q", close_cmd, &opts)?;
     buf.set_keymap(Mode::Normal, "<Esc>", back_cmd, &opts)?;
+    buf.set_keymap(Mode::Normal, "<BS>", back_cmd, &opts)?;
 
     buf.set_keymap(Mode::Normal, "<Up>", size_up_cmd, &opts)?;
     buf.set_keymap(Mode::Normal, "<Down>", size_down_cmd, &opts)?;

@@ -91,7 +91,7 @@ impl App {
             Command::MainMenu => self.show_main_menu(),
             Command::SizeUp => self.size_up(),
             Command::SizeDown => self.size_down(),
-            Command::Close => self.float_window.close(),
+            Command::Close => self.float_window.close_win(),
             Command::Check => self.get_current_font(),
             Command::SetFont(font) => {
                 if font.is_some() {
@@ -120,7 +120,7 @@ impl App {
         ];
 
         self.float_window
-            .open(&self.config, " Nekifoch ", menu_options)?;
+            .f_family_win(&self.config, " Nekifoch ", menu_options, 4)?;
 
         if let Some(window) = &self.float_window.window {
             BufferManager::configure_buffer(window)?;
@@ -195,7 +195,7 @@ impl App {
 
             if let Err(err) =
                 self.float_window
-                    .open(&self.config, " Choose font family ", compatible)
+                    .f_family_win(&self.config, " Choose font family ", compatible, 10)
             {
                 out_write(NvimString::from(format!("Error opening window: {}", err)));
             }
@@ -203,7 +203,7 @@ impl App {
             if let Some(window) = &self.float_window.window {
                 BufferManager::configure_buffer(window)?;
             } else {
-                err_writeln("Window is not open.");
+                // err_writeln("Window is not open.");
             }
         }
         Ok(())
@@ -221,7 +221,7 @@ impl App {
             let fonts = Utils::get(&self.config)?;
             if let Some(current_size_str) = fonts.get("size") {
                 if let Ok(current_size) = current_size_str.parse::<f32>() {
-                    self.float_window.open_for_input(
+                    self.float_window.f_size_win(
                         &self.config,
                         " Change font size ",
                         current_size,
@@ -237,7 +237,7 @@ impl App {
         if let Some(window) = &self.float_window.window {
             BufferManager::configure_buffer(window)?;
         } else {
-            err_writeln("Window is not open.");
+            // err_writeln("Window is not open.");
         }
 
         Ok(())
@@ -284,8 +284,6 @@ impl App {
             let content = format!("\t\t\t\t\nCurrent size: [ {} ]\n\t\t\t\t", new_size);
             let mut buf = window.get_buf()?;
             BufferManager::set_buffer_content(&mut buf, &content)?;
-
-            // nvim_oxi::api::command("redraw!")?;
         } else {
             err_writeln("Window is not open.");
         }

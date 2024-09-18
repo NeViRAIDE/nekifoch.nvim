@@ -1,6 +1,10 @@
 use nvim_oxi::{
     api::{
-        create_buf, err_writeln, get_option_value, open_win, opts::OptionOpts, types::*, Window,
+        create_buf, err_writeln, get_option_value, open_win,
+        opts::{OptionOpts, OptionScope},
+        set_option_value,
+        types::*,
+        Window,
     },
     Result as OxiResult,
 };
@@ -10,7 +14,7 @@ use crate::{error::PluginError, setup::Config};
 use super::{
     buffer::BufferManager,
     mapping::{
-        set_keymaps_for_buffer, set_keymaps_for_size_control, CLOSE_COMMAND, RETURN_COMMAND,
+        set_keymaps_for_buffer, set_keymaps_for_size_control, CLOSE_COMMAND, BACK_COMMAND,
         SIZE_DOWN_COMMAND, SIZE_UP_COMMAND,
     },
 };
@@ -41,7 +45,7 @@ impl<'a> WindowConfigParams<'a> {
             content: None,
             enter_cmd: None,
             close_cmd: Some(CLOSE_COMMAND),
-            back_cmd: Some(RETURN_COMMAND),
+            back_cmd: Some(BACK_COMMAND),
         }
     }
 
@@ -128,6 +132,8 @@ impl FloatWindow {
             .width(params.width as u32)
             .title(WindowTitle::SimpleString(params.title.into()))
             .title_pos(WindowTitlePosition::Center)
+            // .footer(WindowTitle::SimpleString(" [ Back: <esc> | Up: <k> | Down: <j> | Quit: <q> ] ".into()))
+            // .footer_pos(WindowTitlePosition::Right)
             .border(win_border)
             .build();
 
@@ -136,11 +142,17 @@ impl FloatWindow {
         Ok(())
     }
 
-    pub fn open(&mut self, config: &Config, title: &str, items: Vec<String>) -> OxiResult<()> {
+    pub fn f_family_win(
+        &mut self,
+        config: &Config,
+        title: &str,
+        items: Vec<String>,
+        win_height: usize,
+    ) -> OxiResult<()> {
         let content = items.join("\n");
         let max_width = items.iter().map(|s| s.len()).max().unwrap_or(30);
 
-        let params = WindowConfigParams::new(title, 10, max_width + 4)
+        let params = WindowConfigParams::new(title, win_height, max_width + 4)
         .with_content(Some(&content))
         .with_keymaps(true)
         .with_enter_cmd(Some(r#"<cmd>lua local font_name = vim.api.nvim_get_current_line(); local formatted_font_name = font_name:gsub('%s+', ''); vim.cmd('Nekifoch set_font ' .. formatted_font_name)<CR>"#));
@@ -148,12 +160,7 @@ impl FloatWindow {
         self.open_window(config, &params)
     }
 
-    pub fn open_for_input(
-        &mut self,
-        config: &Config,
-        title: &str,
-        current_size: f32,
-    ) -> OxiResult<()> {
+    pub fn f_size_win(&mut self, config: &Config, title: &str, current_size: f32) -> OxiResult<()> {
         let content = format!("\t\t\t\t\nCurrent size: [ {} ]\n\t\t\t\t", current_size);
 
         let params = WindowConfigParams::new(title, 3, 25)
@@ -162,10 +169,20 @@ impl FloatWindow {
 
         self.open_window(config, &params)?;
 
-        if let Some(window) = &self.window {
+        if let Some(window) = self.window.as_mut() {
             let mut buf = window.get_buf()?;
 
-            self.window.as_mut().expect("no window").set_cursor(2, 0)?;
+            window.set_cursor(2, 16)?;
+
+            let ns_id = nvim_oxi::api::create_namespace("my_highlight_namespace");
+            buf.add_highlight(ns_id, "Comment", 1, 0..13)?;
+
+            let buf_opts = OptionOpts::builder()
+                .scope(OptionScope::Local)
+                .win(window.clone())
+                .build();
+
+            set_option_value("cursorline", false, &buf_opts)?;
 
             set_keymaps_for_size_control(
                 &mut buf,
@@ -179,7 +196,7 @@ impl FloatWindow {
         Ok(())
     }
 
-    pub fn close(&mut self) -> OxiResult<()> {
+    pub fn close_win(&mut self) -> OxiResult<()> {
         if self.window.is_none() {
             err_writeln("Window is already closed");
             return Ok(());
