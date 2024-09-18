@@ -29,7 +29,10 @@ use std::{
 };
 
 use dirs::home_dir;
-use nvim_oxi::Result as OxiResult;
+use nvim_oxi::{
+    api::{get_option_value, opts::OptionOpts},
+    Result as OxiResult,
+};
 use regex::Regex;
 use serde_json::Value;
 
@@ -653,5 +656,23 @@ impl Utils {
             return path.replacen("~", &home_dir.to_string_lossy(), 1);
         }
         path.to_string()
+    }
+
+    pub fn get_centered_position(
+        &self,
+        win_height: usize,
+        win_width: usize,
+    ) -> Result<(usize, usize), PluginError> {
+        let opts = OptionOpts::default();
+
+        let editor_height: usize = get_option_value::<usize>("lines", &opts)
+            .map_err(|e| PluginError::Custom(format!("Error getting editor height: {e}")))?;
+        let editor_width: usize = get_option_value::<usize>("columns", &opts)
+            .map_err(|e| PluginError::Custom(format!("Error getting editor width: {e}")))?;
+
+        let row = (editor_height - win_height) / 2;
+        let col = (editor_width - win_width) / 2;
+
+        Ok((row, col))
     }
 }

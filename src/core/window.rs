@@ -1,21 +1,17 @@
 use nvim_oxi::{
     api::{
-        create_buf, err_writeln, get_option_value, open_win,
-        opts::{OptionOpts, OptionScope},
-        set_option_value,
-        types::*,
-        Window,
+        create_buf, err_writeln, open_win, opts::OptionOpts, set_option_value, types::*, Window,
     },
     Result as OxiResult,
 };
 
-use crate::{error::PluginError, setup::Config};
+use crate::{setup::Config, utils::Utils};
 
 use super::{
     buffer::BufferManager,
     mapping::{
-        set_keymaps_for_buffer, set_keymaps_for_size_control, CLOSE_COMMAND, BACK_COMMAND,
-        SIZE_DOWN_COMMAND, SIZE_UP_COMMAND,
+        set_common_keymaps, set_keymaps_for_family_control, set_keymaps_for_size_control,
+        set_menu_keymaps, SIZE_DOWN_COMMAND, SIZE_UP_COMMAND,
     },
 };
 
@@ -24,43 +20,40 @@ pub struct FloatWindow {
     pub window: Option<Window>,
 }
 
-pub struct WindowConfigParams<'a> {
-    pub title: &'a str,
-    pub height: usize,
-    pub width: usize,
-    pub set_keymaps: bool,
-    pub content: Option<&'a str>,
-    pub enter_cmd: Option<&'a str>,
-    pub close_cmd: Option<&'a str>,
-    pub back_cmd: Option<&'a str>,
+pub enum WindowType {
+    FontSizeControl,
+    FontFamilyMenu,
+    MainMenu,
 }
 
-impl<'a> WindowConfigParams<'a> {
-    pub fn new(title: &'a str, height: usize, width: usize) -> Self {
+pub struct CustomWindowConfig<'a> {
+    title: &'a str,
+    height: usize,
+    width: usize,
+    content: Option<&'a str>,
+    keymaps: bool,
+    window_type: WindowType,
+}
+
+impl<'a> CustomWindowConfig<'a> {
+    pub fn new(title: &'a str, height: usize, width: usize, window_type: WindowType) -> Self {
         Self {
             title,
             height,
             width,
-            set_keymaps: false,
             content: None,
-            enter_cmd: None,
-            close_cmd: Some(CLOSE_COMMAND),
-            back_cmd: Some(BACK_COMMAND),
+            keymaps: false,
+            window_type,
         }
     }
 
     pub fn with_keymaps(mut self, keymaps: bool) -> Self {
-        self.set_keymaps = keymaps;
+        self.keymaps = keymaps;
         self
     }
 
     pub fn with_content(mut self, content: Option<&'a str>) -> Self {
         self.content = content;
-        self
-    }
-
-    pub fn with_enter_cmd(mut self, cmd: Option<&'a str>) -> Self {
-        self.enter_cmd = cmd;
         self
     }
 }
@@ -70,25 +63,21 @@ impl FloatWindow {
         Self { window: None }
     }
 
-    fn get_centered_position(
-        &self,
-        win_height: usize,
-        win_width: usize,
-    ) -> Result<(usize, usize), PluginError> {
-        let opts = OptionOpts::default();
+    fn create_window(
+        &mut self,
+        config: &Config,
+        window_config: CustomWindowConfig,
+    ) -> OxiResult<()> {
+        self.open_window(config, &window_config)?;
 
-        let editor_height: usize = get_option_value::<usize>("lines", &opts)
-            .map_err(|e| PluginError::Custom(format!("Error getting editor height: {e}")))?;
-        let editor_width: usize = get_option_value::<usize>("columns", &opts)
-            .map_err(|e| PluginError::Custom(format!("Error getting editor width: {e}")))?;
+        if let Some(window) = &self.window {
+            BufferManager::configure_buffer(window)?;
+        }
 
-        let row = (editor_height - win_height) / 2;
-        let col = (editor_width - win_width) / 2;
-
-        Ok((row, col))
+        Ok(())
     }
 
-    fn open_window(&mut self, config: &Config, params: &WindowConfigParams) -> OxiResult<()> {
+    fn open_window(&mut self, config: &Config, params: &CustomWindowConfig) -> OxiResult<()> {
         if self.window.is_some() {
             err_writeln("Window is already open");
             return Ok(());
@@ -109,17 +98,25 @@ impl FloatWindow {
             BufferManager::set_buffer_content(&mut buf, content)?;
         }
 
-        if params.set_keymaps {
-            if let Some(enter_cmd) = params.enter_cmd {
-                if let Some(close_cmd) = params.close_cmd {
-                    if let Some(back_cmd) = params.back_cmd {
-                        set_keymaps_for_buffer(&mut buf, enter_cmd, close_cmd, back_cmd)?;
-                    }
+        set_common_keymaps(&mut buf)?;
+
+        if params.keymaps {
+            match params.window_type {
+                WindowType::FontFamilyMenu => {
+                    set_common_keymaps(&mut buf)?;
+                    set_keymaps_for_family_control(&mut buf)?;
+                }
+                WindowType::FontSizeControl => {
+                    set_common_keymaps(&mut buf)?;
+                    set_keymaps_for_size_control(&mut buf, SIZE_UP_COMMAND, SIZE_DOWN_COMMAND)?;
+                }
+                WindowType::MainMenu => {
+                    set_menu_keymaps(&mut buf)?;
                 }
             }
         }
 
-        let (row, col) = self
+        let (row, col) = Utils
             .get_centered_position(params.height, params.width)
             .map_err(|e| err_writeln(&format!("Error centering window: {}", e)))
             .unwrap_or((0, 0));
@@ -149,48 +146,75 @@ impl FloatWindow {
         items: Vec<String>,
         win_height: usize,
     ) -> OxiResult<()> {
-        let content = items.join("\n");
-        let max_width = items.iter().map(|s| s.len()).max().unwrap_or(30);
+        let binding = items.join("\n");
+        let content = Some(binding.as_str());
 
-        let params = WindowConfigParams::new(title, win_height, max_width + 4)
-        .with_content(Some(&content))
-        .with_keymaps(true)
-        .with_enter_cmd(Some(r#"<cmd>lua local font_name = vim.api.nvim_get_current_line(); local formatted_font_name = font_name:gsub('%s+', ''); vim.cmd('Nekifoch set_font ' .. formatted_font_name)<CR>"#));
+        let window_config = CustomWindowConfig::new(
+            title,
+            win_height,
+            items.iter().map(|s| s.len()).max().unwrap_or(30) + 4,
+            WindowType::FontFamilyMenu,
+        )
+        .with_content(content)
+        .with_keymaps(true);
 
-        self.open_window(config, &params)
+        self.create_window(config, window_config)
     }
 
     pub fn f_size_win(&mut self, config: &Config, title: &str, current_size: f32) -> OxiResult<()> {
         let content = format!("\t\t\t\t\nCurrent size: [ {} ]\n\t\t\t\t", current_size);
 
-        let params = WindowConfigParams::new(title, 3, 25)
+        let window_config = CustomWindowConfig::new(title, 3, 25, WindowType::FontSizeControl)
             .with_content(Some(&content))
             .with_keymaps(true);
 
-        self.open_window(config, &params)?;
+        self.create_window(config, window_config)?;
 
         if let Some(window) = self.window.as_mut() {
             let mut buf = window.get_buf()?;
-
             window.set_cursor(2, 16)?;
 
-            let ns_id = nvim_oxi::api::create_namespace("my_highlight_namespace");
+            // Добавляем highlight и отключаем подсветку курсора
+            let ns_id = nvim_oxi::api::create_namespace("font_size_namespace");
             buf.add_highlight(ns_id, "Comment", 1, 0..13)?;
-
-            let buf_opts = OptionOpts::builder()
-                .scope(OptionScope::Local)
-                .win(window.clone())
-                .build();
-
-            set_option_value("cursorline", false, &buf_opts)?;
-
-            set_keymaps_for_size_control(
-                &mut buf,
-                params.back_cmd.unwrap(),
-                params.close_cmd.unwrap(),
-                SIZE_UP_COMMAND,
-                SIZE_DOWN_COMMAND,
+            set_option_value(
+                "cursorline",
+                false,
+                &OptionOpts::builder().win(window.clone()).build(),
             )?;
+        }
+
+        Ok(())
+    }
+
+    pub fn menu_win(&mut self, config: &Config) -> OxiResult<()> {
+        let menu_options = [
+            "Check current font".to_string(),
+            "Set font family".to_string(),
+            "Set font size".to_string(),
+            "Show installed fonts".to_string(),
+        ];
+
+        let binding = menu_options.join("\n");
+        let content = Some(binding.as_str());
+
+        // self.f_family_win(config, " Nekifoch ", menu_options, 4)?;
+
+        let window_config = CustomWindowConfig::new(
+            " Nekifoch ",
+            4,
+            menu_options.iter().map(|s| s.len()).max().unwrap_or(30) + 4,
+            WindowType::MainMenu,
+        )
+        .with_content(content)
+        .with_keymaps(true);
+
+        self.create_window(config, window_config)?;
+
+        if let Some(window) = &self.window {
+            BufferManager::configure_buffer(window)?;
+            let mut buf = window.get_buf()?;
+            set_menu_keymaps(&mut buf)?;
         }
 
         Ok(())

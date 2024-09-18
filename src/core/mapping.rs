@@ -5,70 +5,93 @@ use nvim_oxi::{
 
 pub const CLOSE_COMMAND: &str = "<cmd>lua vim.cmd('Nekifoch close')<cr>";
 pub const BACK_COMMAND: &str = r#"<cmd>lua vim.cmd('Nekifoch close'); vim.cmd('Nekifoch')<cr>"#;
-
 pub const SIZE_UP_COMMAND: &str = "<cmd>Nekifoch size_up<CR>";
 pub const SIZE_DOWN_COMMAND: &str = "<cmd>Nekifoch size_down<CR>";
 
-pub fn set_keymaps_for_buffer(
+pub fn set_keymaps(
     buf: &mut Buffer,
-    enter_cmd: &str,
-    close_cmd: &str,
-    back_cmd: &str,
+    mappings: Vec<(&str, &str)>,
+    opts: SetKeymapOpts,
 ) -> OxiResult<()> {
-    let opts = SetKeymapOpts::builder().noremap(true).silent(true).build();
-
-    // Set the keymap for the Enter key using the provided `enter_cmd`.
-    buf.set_keymap(Mode::Normal, "<CR>", enter_cmd, &opts)?;
-
-    // Set the keymap for the 'q' key or 'Esc' key using the provided `close_cmd`.
-    buf.set_keymap(Mode::Normal, "q", close_cmd, &opts)?;
-    buf.set_keymap(Mode::Normal, "<Esc>", back_cmd, &opts)?;
-    buf.set_keymap(Mode::Normal, "<BS>", back_cmd, &opts)?;
-
-    // Optional navigation keymaps, if needed.
-    buf.set_keymap(Mode::Normal, "j", "gj", &opts)?;
-    buf.set_keymap(Mode::Normal, "<Down>", "gj", &opts)?;
-    buf.set_keymap(Mode::Normal, "<Tab>", "gj", &opts)?;
-    buf.set_keymap(Mode::Normal, "k", "gk", &opts)?;
-    buf.set_keymap(Mode::Normal, "<Up>", "gk", &opts)?;
-    buf.set_keymap(Mode::Normal, "<S-Tab>", "gk", &opts)?;
-
+    for (key, cmd) in mappings {
+        buf.set_keymap(Mode::Normal, key, cmd, &opts)?;
+    }
     Ok(())
 }
 
-pub fn set_keymaps_for_menu(buf: &mut Buffer) -> OxiResult<()> {
-    let opts = SetKeymapOpts::builder().noremap(true).silent(true).build();
+pub fn set_common_keymaps(buf: &mut Buffer) -> OxiResult<()> {
+    let mappings = vec![
+        ("q", CLOSE_COMMAND),
+        ("<Esc>", BACK_COMMAND),
+        ("<BS>", BACK_COMMAND),
+    ];
 
-    buf.set_keymap(
-        Mode::Normal,
-        "<CR>",
-        r#"<cmd>lua local selection = vim.api.nvim_get_current_line(); if selection == "Check current font" then vim.cmd('Nekifoch check') elseif selection == "Show installed fonts" then vim.cmd('Nekifoch list') elseif selection == "Set font family" then vim.cmd('Nekifoch close');vim.cmd('Nekifoch set_font') elseif selection == "Set font size" then vim.cmd('Nekifoch close');vim.cmd('Nekifoch set_size') end<CR>"#,
-        &opts,
-    )?;
-
-    buf.set_keymap(Mode::Normal, "q", CLOSE_COMMAND, &opts)?;
-    buf.set_keymap(Mode::Normal, "<Esc>", CLOSE_COMMAND, &opts)?;
-
-    Ok(())
+    set_keymaps(
+        buf,
+        mappings,
+        SetKeymapOpts::builder().noremap(true).silent(true).build(),
+    )
 }
 
 pub fn set_keymaps_for_size_control(
     buf: &mut Buffer,
-    back_cmd: &str,
-    close_cmd: &str,
     size_up_cmd: &str,
     size_down_cmd: &str,
 ) -> OxiResult<()> {
-    let opts = SetKeymapOpts::builder().noremap(true).silent(true).build();
+    let mappings = vec![
+        ("k", size_up_cmd),
+        ("j", size_down_cmd),
+        ("<up>", size_up_cmd),
+        ("<down>", size_down_cmd),
+    ];
 
-    buf.set_keymap(Mode::Normal, "q", close_cmd, &opts)?;
-    buf.set_keymap(Mode::Normal, "<Esc>", back_cmd, &opts)?;
-    buf.set_keymap(Mode::Normal, "<BS>", back_cmd, &opts)?;
+    set_keymaps(
+        buf,
+        mappings,
+        SetKeymapOpts::builder().noremap(true).silent(true).build(),
+    )
+}
 
-    buf.set_keymap(Mode::Normal, "<Up>", size_up_cmd, &opts)?;
-    buf.set_keymap(Mode::Normal, "<Down>", size_down_cmd, &opts)?;
-    buf.set_keymap(Mode::Normal, "k", size_up_cmd, &opts)?;
-    buf.set_keymap(Mode::Normal, "j", size_down_cmd, &opts)?;
+pub fn set_keymaps_for_family_control(buf: &mut Buffer) -> OxiResult<()> {
+    let get_current_line = "local font_name = vim.api.nvim_get_current_line();";
+    let format_font_name = "local formatted_font_name = font_name:gsub('%s+', '');";
+    let set_font_cmd = "vim.cmd('Nekifoch set_font ' .. formatted_font_name);";
 
-    Ok(())
+    let lua_cmd = format!(
+        "<cmd>lua {}; {}; {}<CR>",
+        get_current_line, format_font_name, set_font_cmd
+    );
+
+    let mappings = vec![("<CR>", lua_cmd.as_str())];
+
+    set_keymaps(
+        buf,
+        mappings,
+        SetKeymapOpts::builder().noremap(true).silent(true).build(),
+    )
+}
+
+pub fn set_menu_keymaps(buf: &mut Buffer) -> OxiResult<()> {
+    let check_font = r#"if selection == "Check current font" then vim.cmd('Nekifoch check')"#;
+    let show_installed_fonts =
+        r#"elseif selection == "Show installed fonts" then vim.cmd('Nekifoch list')"#;
+    let set_font_family = r#"elseif selection == "Set font family" then vim.cmd('Nekifoch close'); vim.cmd('Nekifoch set_font')"#;
+    let set_font_size = r#"elseif selection == "Set font size" then vim.cmd('Nekifoch close'); vim.cmd('Nekifoch set_size')"#;
+
+    let lua_cmd = format!(
+        "<cmd>lua local selection = vim.api.nvim_get_current_line(); {} {} {} {} end<CR>",
+        check_font, show_installed_fonts, set_font_family, set_font_size
+    );
+
+    let menu_mappings = vec![
+        ("<CR>", lua_cmd.as_str()),
+        ("<Esc>", CLOSE_COMMAND),
+        ("<BS>", "<Nop>"),
+    ];
+
+    set_keymaps(
+        buf,
+        menu_mappings,
+        SetKeymapOpts::builder().noremap(true).silent(true).build(),
+    )
 }
