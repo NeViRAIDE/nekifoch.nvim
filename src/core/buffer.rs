@@ -1,7 +1,7 @@
 use nvim_oxi::{
     api::{
-        clear_autocmds, create_autocmd, err_writeln,
-        opts::{ClearAutocmdsOpts, CreateAutocmdOpts, OptionOpts, OptionScope},
+        create_autocmd, err_writeln,
+        opts::{CreateAutocmdOpts, OptionOpts, OptionScope},
         set_option_value, Buffer,
     },
     Result as OxiResult,
@@ -35,9 +35,6 @@ impl BufferManager {
     }
 
     pub fn setup_autocmd_for_float_window(buffer: &Buffer) -> OxiResult<()> {
-        let clear_opts = ClearAutocmdsOpts::builder().buffer(buffer.clone()).build();
-        clear_autocmds(&clear_opts)?;
-
         let autocmd_opts = CreateAutocmdOpts::builder()
             .command("Nekifoch close")
             .buffer(buffer.clone())

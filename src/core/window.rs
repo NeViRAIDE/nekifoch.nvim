@@ -1,7 +1,10 @@
 use nvim_oxi::{
     api::{
-        create_buf, create_namespace, err_writeln, open_win, opts::OptionOpts, set_option_value,
-        types::*, Window,
+        clear_autocmds, create_buf, create_namespace, err_writeln, open_win,
+        opts::{ClearAutocmdsOpts, OptionOpts},
+        set_option_value,
+        types::*,
+        Window,
     },
     Result as OxiResult,
 };
@@ -308,6 +311,11 @@ impl FloatWindow {
         }
 
         if let Some(win) = self.window.take() {
+            let buf = win.get_buf()?;
+
+            let clear_opts = ClearAutocmdsOpts::builder().buffer(buf.clone()).build();
+            clear_autocmds(&clear_opts)?;
+
             win.close(false).map_err(|e| e.into())
         } else {
             Ok(())

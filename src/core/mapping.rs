@@ -60,7 +60,7 @@ pub fn set_keymaps_for_family_control(buf: &mut Buffer) -> OxiResult<()> {
     let set_font_cmd = "vim.cmd('Nekifoch set_font ' .. formatted_font_name);";
 
     let lua_cmd = format!(
-        "<cmd>lua {}; {}; {}<CR>",
+        "<cmd>lua {} {} {}<CR>",
         get_current_line, format_font_name, set_font_cmd
     );
 
