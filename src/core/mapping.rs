@@ -24,6 +24,8 @@ pub fn set_common_keymaps(buf: &mut Buffer) -> OxiResult<()> {
         ("q", CLOSE_COMMAND),
         ("<Esc>", BACK_COMMAND),
         ("<BS>", BACK_COMMAND),
+        ("<S-Tab>", "gk"),
+        ("<Tab>", "gj"),
     ];
 
     set_keymaps(

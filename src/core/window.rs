@@ -74,7 +74,9 @@ impl FloatWindow {
         self.open_window(config, &window_config)?;
 
         if let Some(window) = &self.window {
-            BufferManager::configure_buffer(window)?;
+            let buf = window.get_buf()?;
+            BufferManager::configure_buffer()?;
+            BufferManager::setup_autocmd_for_float_window(&buf)?;
         }
 
         Ok(())
@@ -215,8 +217,6 @@ impl FloatWindow {
         let binding = menu_options.join("\n");
         let content = Some(binding.as_str());
 
-        // self.f_family_win(config, " Nekifoch ", menu_options, 4)?;
-
         let window_config = CustomWindowConfig::new(
             " Nekifoch ",
             4,
@@ -227,10 +227,6 @@ impl FloatWindow {
         .with_keymaps(true);
 
         self.create_window(config, window_config)?;
-
-        if let Some(window) = &self.window {
-            BufferManager::configure_buffer(window)?;
-        }
 
         Ok(())
     }
@@ -257,7 +253,7 @@ impl FloatWindow {
         if let Some(window) = self.window.as_mut() {
             let mut buf = window.get_buf()?;
 
-            BufferManager::configure_buffer(window)?;
+            BufferManager::configure_buffer()?;
             window.set_cursor(1, 8)?;
 
             let ns_id = create_namespace("font_size_namespace");
@@ -293,7 +289,7 @@ impl FloatWindow {
         self.create_window(config, window_config)?;
 
         if let Some(window) = &self.window {
-            BufferManager::configure_buffer(window)?;
+            BufferManager::configure_buffer()?;
 
             set_option_value(
                 "cursorline",

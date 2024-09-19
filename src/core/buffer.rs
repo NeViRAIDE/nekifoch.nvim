@@ -1,7 +1,8 @@
 use nvim_oxi::{
     api::{
-        opts::{OptionOpts, OptionScope},
-        set_option_value, Buffer, Window,
+        clear_autocmds, create_autocmd, err_writeln,
+        opts::{ClearAutocmdsOpts, CreateAutocmdOpts, OptionOpts, OptionScope},
+        set_option_value, Buffer,
     },
     Result as OxiResult,
 };
@@ -15,16 +16,35 @@ impl BufferManager {
         Ok(())
     }
 
-    // TODO: set buffer type
-    pub fn configure_buffer(window: &Window) -> OxiResult<()> {
-        let buf_opts = OptionOpts::builder()
-            .scope(OptionScope::Local)
-            .win(window.clone())
+    pub fn configure_buffer() -> OxiResult<()> {
+        let buf_opts = OptionOpts::builder().scope(OptionScope::Local).build();
+
+        if let Err(e) = set_option_value("number", false, &buf_opts) {
+            err_writeln(&format!("Failed to set 'number' option: {}", e));
+        }
+
+        if let Err(e) = set_option_value("relativenumber", false, &buf_opts) {
+            err_writeln(&format!("Failed to set 'relativenumber' option: {}", e));
+        }
+
+        if let Err(e) = set_option_value("filetype", "nekifoch", &buf_opts) {
+            err_writeln(&format!("Failed to set 'filetype': {}", e));
+        }
+
+        Ok(())
+    }
+
+    pub fn setup_autocmd_for_float_window(buffer: &Buffer) -> OxiResult<()> {
+        let clear_opts = ClearAutocmdsOpts::builder().buffer(buffer.clone()).build();
+        clear_autocmds(&clear_opts)?;
+
+        let autocmd_opts = CreateAutocmdOpts::builder()
+            .command("Nekifoch close")
+            .buffer(buffer.clone())
             .build();
 
-        set_option_value("number", false, &buf_opts)?;
-        set_option_value("relativenumber", false, &buf_opts)?;
-        // set_option_value("cursorline", false, &buf_opts)?;
+        create_autocmd(vec!["WinLeave"], &autocmd_opts)?;
+
         Ok(())
     }
 }
