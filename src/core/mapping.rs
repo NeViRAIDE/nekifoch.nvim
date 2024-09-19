@@ -72,9 +72,8 @@ pub fn set_keymaps_for_family_control(buf: &mut Buffer) -> OxiResult<()> {
 }
 
 pub fn set_menu_keymaps(buf: &mut Buffer) -> OxiResult<()> {
-    let check_font = r#"if selection == "Check current font" then vim.cmd('Nekifoch check')"#;
-    let show_installed_fonts =
-        r#"elseif selection == "Show installed fonts" then vim.cmd('Nekifoch list')"#;
+    let check_font = r#"if selection == "Check current font" then vim.cmd('Nekifoch close');vim.cmd('Nekifoch float_check')"#;
+    let show_installed_fonts = r#"elseif selection == "Show installed fonts" then vim.cmd('Nekifoch close');vim.cmd('Nekifoch float_list')"#;
     let set_font_family = r#"elseif selection == "Set font family" then vim.cmd('Nekifoch close'); vim.cmd('Nekifoch set_font')"#;
     let set_font_size = r#"elseif selection == "Set font size" then vim.cmd('Nekifoch close'); vim.cmd('Nekifoch set_size')"#;
 

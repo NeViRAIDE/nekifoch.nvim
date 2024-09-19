@@ -24,6 +24,8 @@ pub enum WindowType {
     FontSizeControl,
     FontFamilyMenu,
     MainMenu,
+    FontInfo,
+    FontList,
 }
 
 pub struct CustomWindowConfig<'a> {
@@ -112,6 +114,12 @@ impl FloatWindow {
                 }
                 WindowType::MainMenu => {
                     set_menu_keymaps(&mut buf)?;
+                }
+                WindowType::FontInfo => {
+                    set_common_keymaps(&mut buf)?;
+                }
+                WindowType::FontList => {
+                    set_common_keymaps(&mut buf)?;
                 }
             }
         }
@@ -213,8 +221,57 @@ impl FloatWindow {
 
         if let Some(window) = &self.window {
             BufferManager::configure_buffer(window)?;
-            let mut buf = window.get_buf()?;
-            set_menu_keymaps(&mut buf)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn f_check_win(
+        &mut self,
+        config: &Config,
+        title: &str,
+        content: Option<&str>,
+        win_height: usize,
+    ) -> OxiResult<()> {
+        let window_width = content
+            .map(|s| s.lines().map(|line| line.len()).max().unwrap_or(20))
+            .unwrap_or(20)
+            + 4;
+
+        let window_config =
+            CustomWindowConfig::new(title, win_height, window_width, WindowType::FontInfo)
+                .with_content(content)
+                .with_keymaps(true);
+
+        self.create_window(config, window_config)?;
+
+        if let Some(window) = &self.window {
+            BufferManager::configure_buffer(window)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn f_list_win(
+        &mut self,
+        config: &Config,
+        title: &str,
+        content: String,
+        win_height: usize,
+    ) -> OxiResult<()> {
+        let window_config = CustomWindowConfig::new(
+            title,
+            win_height,
+            content.lines().map(|s| s.len()).max().unwrap_or(20) + 4,
+            WindowType::FontList,
+        )
+        .with_content(Some(&content))
+        .with_keymaps(true);
+
+        self.create_window(config, window_config)?;
+
+        if let Some(window) = &self.window {
+            BufferManager::configure_buffer(window)?;
         }
 
         Ok(())

@@ -17,20 +17,6 @@ use nvim_oxi::{print, Result as OxiResult};
 
 use crate::utils::Utils;
 
-/// Enum representing various commands that can be issued to the plugin.
-///
-/// This enum holds different command variants that the plugin can handle.
-/// Each variant corresponds to a specific action, such as closing the window,
-/// checking the current font, setting the font or size, or listing available fonts.
-///
-/// # Variants
-///
-/// - `Close`: Closes the floating window used to display font information.
-/// - `Check`: Displays the current font family and size in Neovim.
-/// - `SetFont(Option<String>)`: Sets the font family for Kitty. If `None`, a floating window
-///   for selecting a font will be displayed. If a font family is provided, it will be set directly.
-/// - `SetSize(f32)`: Sets the font size for Kitty.
-/// - `List`: Lists all available fonts that can be used in Kitty.
 #[derive(Debug)]
 pub enum Command {
     MainMenu,
@@ -38,9 +24,11 @@ pub enum Command {
     SizeDown,
     Close,
     Check,
+    FCheck,
     SetFont(Option<String>),
     SetSize(Option<f32>),
     List,
+    FList,
 }
 
 /// Parses a command and its argument from strings.
@@ -65,12 +53,14 @@ impl Command {
             "size_down" => Some(Command::SizeDown),
             "close" => Some(Command::Close),
             "check" => Some(Command::Check),
+            "float_check" => Some(Command::FCheck),
             "set_font" => Some(Command::SetFont(arg.map(|s| s.to_string()))),
             "set_size" => {
                 let size = arg.and_then(|s| s.parse::<f32>().ok());
                 Some(Command::SetSize(size))
             }
             "list" => Some(Command::List),
+            "float_list" => Some(Command::FList),
             _ => None,
         }
     }

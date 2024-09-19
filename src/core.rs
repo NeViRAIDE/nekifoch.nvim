@@ -93,6 +93,7 @@ impl App {
             Command::SizeDown => self.size_down(),
             Command::Close => self.float_window.close_win(),
             Command::Check => self.get_current_font(),
+            Command::FCheck => self.get_current_font_window(),
             Command::SetFont(font) => {
                 if font.is_some() {
                     self.set_font_family(font.as_deref())
@@ -108,7 +109,29 @@ impl App {
                 }
             }
             Command::List => get_fonts_list(),
+            Command::FList => self.get_fonts_list_window(),
         }
+    }
+
+    fn get_fonts_list_window(&mut self) -> OxiResult<()> {
+        let installed_fonts = Utils::list_installed_fonts();
+        let compatible = Utils::compare_fonts_with_kitty_list_fonts(installed_fonts);
+
+        let mut fonts: Vec<&String> = compatible.values().collect();
+        fonts.sort();
+
+        let content = fonts
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<&str>>()
+            .join("\n");
+
+        let window_height = content.lines().count();
+
+        self.float_window
+            .f_list_win(&self.config, " Available fonts ", content, window_height)?;
+
+        Ok(())
     }
 
     /// Retrieves and displays the current font family and size from the Kitty terminal configuration.
@@ -139,8 +162,8 @@ impl App {
     fn handle_font_command<T>(
         &mut self,
         arg: Option<&str>,
-        parse_arg: fn(&str) -> Result<T, String>, // Функция для преобразования аргумента
-        command: fn(&Config, T) -> OxiResult<()>, // Генерик для поддержки разных типов
+        parse_arg: fn(&str) -> Result<T, String>,
+        command: fn(&Config, T) -> OxiResult<()>,
         display_window: fn(&mut FloatWindow, &Config) -> OxiResult<()>,
     ) -> OxiResult<()> {
         if let Some(arg_value) = arg {
@@ -160,11 +183,26 @@ impl App {
         Ok(())
     }
 
+    fn get_current_font_window(&mut self) -> OxiResult<()> {
+        let current = Utils::get(&self.config)?;
+
+        let content = [
+            format!("Family: {}", current["font"]),
+            format!("Size: {}", current["size"]),
+        ];
+
+        let binding = content.join("\n");
+        let content = Some(binding.as_str());
+
+        self.float_window
+            .f_check_win(&self.config, " Current Font Info ", content, 2)
+    }
+
     fn set_font_family(&mut self, arg: Option<&str>) -> OxiResult<()> {
         self.handle_font_command(
             arg,
-            |s| Ok(s.to_string()), // Преобразуем &str в String
-            |config, font_family| Utils::replace_font_family(config, &font_family), // Передаём ссылку на строку
+            |s| Ok(s.to_string()),
+            |config, font_family| Utils::replace_font_family(config, &font_family),
             |float_window, config| {
                 let installed_fonts = Utils::list_installed_fonts();
                 let mut compatible: Vec<String> =
@@ -174,7 +212,7 @@ impl App {
                         .collect();
                 compatible.sort();
 
-                float_window.f_family_win(config, "Choose font family", compatible, 10)
+                float_window.f_family_win(config, " Choose font family ", compatible, 10)
             },
         )
     }
@@ -185,7 +223,7 @@ impl App {
             |s| {
                 s.parse::<f32>()
                     .map_err(|_| "Invalid size format".to_string())
-            }, // Преобразуем строку в f32
+            },
             Utils::replace_font_size,
             |float_window, config| {
                 let fonts = Utils::get(config)?;
@@ -203,93 +241,6 @@ impl App {
             },
         )
     }
-
-    // /// Sets the font family in the Kitty terminal configuration or opens a floating window to select a font.
-    // ///
-    // /// If a font family is provided as an argument, it will update the font in the Kitty terminal configuration
-    // /// using the `Utils::replace_font_family` function. If no argument is provided, a floating window with a list of
-    // /// available fonts will be opened, allowing the user to select one. The selected font will then be applied.
-    // ///
-    // /// # Arguments
-    // ///
-    // /// * `arg` - An optional string containing the font family to set. If `None`, a font selection window will be displayed.
-    // ///
-    // /// # Returns
-    // ///
-    // /// Returns an `OxiResult<()>` to indicate success or failure. If the font family cannot be updated or the floating
-    // /// window cannot be opened, an error will be propagated.
-    // ///
-    // /// # Errors
-    // ///
-    // /// This function will return an error if:
-    // /// - The font family cannot be replaced.
-    // /// - The floating window fails to open.
-    // /// - The window buffer cannot be configured.
-    // fn set_font_family(&mut self, arg: Option<&str>) -> OxiResult<()> {
-    //     if let Some(font_family) = arg {
-    //         Utils::replace_font_family(&self.config, font_family)?;
-    //         out_write(NvimString::from(format!(
-    //             "Font family set to {}",
-    //             font_family
-    //         )));
-    //     } else {
-    //         let installed_fonts = Utils::list_installed_fonts();
-    //         let mut compatible: Vec<String> =
-    //             Utils::compare_fonts_with_kitty_list_fonts(installed_fonts)
-    //                 .values()
-    //                 .cloned()
-    //                 .collect();
-    //         compatible.sort();
-    //
-    //         if let Err(err) =
-    //             self.float_window
-    //                 .f_family_win(&self.config, " Choose font family ", compatible, 10)
-    //         {
-    //             out_write(NvimString::from(format!("Error opening window: {}", err)));
-    //         }
-    //
-    //         if let Some(window) = &self.float_window.window {
-    //             BufferManager::configure_buffer(window)?;
-    //         } else {
-    //             // err_writeln("Window is not open.");
-    //         }
-    //     }
-    //     Ok(())
-    // }
-    //
-    // fn set_font_size(&mut self, arg: Option<&str>) -> OxiResult<()> {
-    //     if let Some(size_str) = arg {
-    //         if let Ok(size) = size_str.parse::<f32>() {
-    //             Utils::replace_font_size(&self.config, size)?;
-    //             out_write(NvimString::from(format!("Font size set to {}", size)));
-    //         } else {
-    //             err_writeln("Invalid font size argument for set_size action");
-    //         }
-    //     } else {
-    //         let fonts = Utils::get(&self.config)?;
-    //         if let Some(current_size_str) = fonts.get("size") {
-    //             if let Ok(current_size) = current_size_str.parse::<f32>() {
-    //                 self.float_window.f_size_win(
-    //                     &self.config,
-    //                     " Change font size ",
-    //                     current_size,
-    //                 )?;
-    //             } else {
-    //                 err_writeln("Invalid current font size in config.");
-    //             }
-    //         } else {
-    //             err_writeln("Current font size not found.");
-    //         }
-    //     }
-    //
-    //     if let Some(window) = &self.float_window.window {
-    //         BufferManager::configure_buffer(window)?;
-    //     } else {
-    //         // err_writeln("Window is not open.");
-    //     }
-    //
-    //     Ok(())
-    // }
 
     pub fn size_up(&mut self) -> OxiResult<()> {
         let fonts = Utils::get(&self.config)?;
