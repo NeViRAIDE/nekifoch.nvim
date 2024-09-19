@@ -675,4 +675,27 @@ impl Utils {
 
         Ok((row, col))
     }
+
+    pub fn format_fonts_in_columns(fonts: Vec<String>) -> String {
+        let mut sorted_fonts = fonts;
+        sorted_fonts.sort(); // сортируем список шрифтов по алфавиту
+
+        let total_fonts = sorted_fonts.len();
+        let midpoint = (total_fonts + 1) / 2; // середина списка
+
+        let (left_column, right_column) = sorted_fonts.split_at(midpoint); // разбиваем список на две части
+
+        let mut content = String::new();
+
+        // Формируем строки для двух колонок
+        for (left, right) in left_column.iter().zip(
+            right_column
+                .iter()
+                .chain(std::iter::repeat(&"".to_string())), // заполняем пустыми строками, если правая колонка короче
+        ) {
+            content.push_str(&format!("{:<40} {}\n", left, right)); // выравнивание колонок
+        }
+
+        content
+    }
 }

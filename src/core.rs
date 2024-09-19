@@ -24,7 +24,7 @@
 //! - `:Nekifoch close`: Close the floating window used to display font information.
 
 use nvim_oxi::{
-    api::{err_writeln, out_write},
+    api::{create_namespace, err_writeln, out_write},
     print, Dictionary, Result as OxiResult, String as NvimString,
 };
 
@@ -117,14 +117,10 @@ impl App {
         let installed_fonts = Utils::list_installed_fonts();
         let compatible = Utils::compare_fonts_with_kitty_list_fonts(installed_fonts);
 
-        let mut fonts: Vec<&String> = compatible.values().collect();
+        let mut fonts: Vec<String> = compatible.values().cloned().collect();
         fonts.sort();
 
-        let content = fonts
-            .iter()
-            .map(|s| s.as_str())
-            .collect::<Vec<&str>>()
-            .join("\n");
+        let content = Utils::format_fonts_in_columns(fonts);
 
         let window_height = content.lines().count();
 
@@ -188,7 +184,7 @@ impl App {
 
         let content = [
             format!("Family: {}", current["font"]),
-            format!("Size: {}", current["size"]),
+            format!("Size:   {}", current["size"]),
         ];
 
         let binding = content.join("\n");
@@ -212,7 +208,16 @@ impl App {
                         .collect();
                 compatible.sort();
 
-                float_window.f_family_win(config, " Choose font family ", compatible, 10)
+                let fonts = Utils::get(config)?;
+                let current_font = fonts["font"].clone();
+
+                float_window.f_family_win(
+                    config,
+                    " Choose font family ",
+                    compatible,
+                    10,
+                    &current_font,
+                )
             },
         )
     }
@@ -229,7 +234,7 @@ impl App {
                 let fonts = Utils::get(config)?;
                 if let Some(current_size_str) = fonts.get("size") {
                     if let Ok(current_size) = current_size_str.parse::<f32>() {
-                        float_window.f_size_win(config, "Change font size", current_size)
+                        float_window.f_size_win(config, " Change font size ", current_size)
                     } else {
                         err_writeln("Invalid current font size in config.");
                         Ok(())
@@ -283,6 +288,9 @@ impl App {
             let content = format!("\t\t\t\t\nCurrent size: [ {} ]\n\t\t\t\t", new_size);
             let mut buf = window.get_buf()?;
             BufferManager::set_buffer_content(&mut buf, &content)?;
+
+            let ns_id = create_namespace("font_size_namespace");
+            buf.add_highlight(ns_id, "Comment", 1, 0..13)?;
         } else {
             err_writeln("Window is not open.");
         }

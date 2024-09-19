@@ -1,6 +1,7 @@
 use nvim_oxi::{
     api::{
-        create_buf, err_writeln, open_win, opts::OptionOpts, set_option_value, types::*, Window,
+        create_buf, create_namespace, err_writeln, open_win, opts::OptionOpts, set_option_value,
+        types::*, Window,
     },
     Result as OxiResult,
 };
@@ -153,6 +154,7 @@ impl FloatWindow {
         title: &str,
         items: Vec<String>,
         win_height: usize,
+        current_font: &str, // добавляем текущий шрифт
     ) -> OxiResult<()> {
         let binding = items.join("\n");
         let content = Some(binding.as_str());
@@ -166,7 +168,15 @@ impl FloatWindow {
         .with_content(content)
         .with_keymaps(true);
 
-        self.create_window(config, window_config)
+        self.create_window(config, window_config)?;
+
+        if let Some(window) = &mut self.window {
+            if let Some(index) = items.iter().position(|f| f == current_font) {
+                window.set_cursor(index + 1, 0)?;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn f_size_win(&mut self, config: &Config, title: &str, current_size: f32) -> OxiResult<()> {
@@ -182,8 +192,7 @@ impl FloatWindow {
             let mut buf = window.get_buf()?;
             window.set_cursor(2, 16)?;
 
-            // Добавляем highlight и отключаем подсветку курсора
-            let ns_id = nvim_oxi::api::create_namespace("font_size_namespace");
+            let ns_id = create_namespace("font_size_namespace");
             buf.add_highlight(ns_id, "Comment", 1, 0..13)?;
             set_option_value(
                 "cursorline",
@@ -245,8 +254,21 @@ impl FloatWindow {
 
         self.create_window(config, window_config)?;
 
-        if let Some(window) = &self.window {
+        if let Some(window) = self.window.as_mut() {
+            let mut buf = window.get_buf()?;
+
             BufferManager::configure_buffer(window)?;
+            window.set_cursor(1, 8)?;
+
+            let ns_id = create_namespace("font_size_namespace");
+            buf.add_highlight(ns_id, "Comment", 0, 0..7)?;
+            buf.add_highlight(ns_id, "Comment", 1, 0..7)?;
+
+            set_option_value(
+                "cursorline",
+                false,
+                &OptionOpts::builder().win(window.clone()).build(),
+            )?;
         }
 
         Ok(())
@@ -272,6 +294,12 @@ impl FloatWindow {
 
         if let Some(window) = &self.window {
             BufferManager::configure_buffer(window)?;
+
+            set_option_value(
+                "cursorline",
+                false,
+                &OptionOpts::builder().win(window.clone()).build(),
+            )?;
         }
 
         Ok(())
