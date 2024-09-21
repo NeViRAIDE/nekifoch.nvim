@@ -20,7 +20,6 @@
   <a href="#defaults">Defaults</a> •
   <a href="#usage">Usage</a> •
   <a href="#configuration">Configuration</a> •
-  <a href="#whichkey">WhichKey</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a> •
   <a href="#donations">Donations</a>
@@ -57,9 +56,6 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 ```lua
 {
     kitty_conf_path = '~/.config/kitty/kitty.conf',
-    which_key = {
-        enable = false,
-    },
     borders = 'none', --available values are: 'rounded', 'single', 'double', 'shadow', 'solid', 'none'
 }
 ```
@@ -151,9 +147,6 @@ or
     cmd = 'Nekifoch', -- to add lazy loading
     opts = {
         kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf'), -- your kitty config path
-        which_key = {
-            enable = false, -- without which_key
-        },
     }
 }
 ```
@@ -164,59 +157,8 @@ Replace '~/.config/kitty/kitty.conf' with the actual path to your Kitty terminal
   <a href="#top">. . . go top</a>
 </p>
 
-<div align="center">
-
-<h2 id='whichkey'>WhichKey</h2>
-
-</div>
 
 
-https://github.com/RAprogramm/nekifoch/assets/70325462/eb418579-7ef1-4d14-83cb-f9baf2e68b52
-
-
-
-> [!IMPORTANT]
-> [WhichKey](https://github.com/folke/which-key.nvim) must be installed
-
-Here's an example configuration using Lua:
-
-```lua
-require('nekifoch').setup({
-    which_key = {
-        enable = true
-    }
-})
-```
-
-or
-
-```lua
-{
-  'NeViRAIDE/nekifoch.nvim',
-  event = 'VeryLazy',
-  build = './install.sh',
-  dependencies = {
-    {
-      "folke/which-key.nvim",
-      event = "VeryLazy",
-      init = function()
-        vim.o.timeout = true
-        vim.o.timeoutlen = 300
-      end,
-      opts = {
-        -- your configuration comes here
-        -- or leave it empty to use the default settings
-        -- refer to the configuration section below
-      }
-    }
-  },
-  opts = {
-    which_key = {
-      enable = true,
-    }
-  },
-}
-```
 
 <div align="center">
 
