@@ -40,7 +40,7 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 ```lua
 {
     'NeViRAIDE/nekifoch.nvim',
-    build = './install.sh',
+    build = 'chmod +x ./install.sh && ./install.sh',
     cmd = 'Nekifoch',
     opts = {},
 }
