@@ -1,0 +1,17 @@
+[package]
+name = "nekifoch_nvim"
+version = "2.0.0"
+edition = "2021"
+
+[dependencies]
+nvim-oxi = { version = "0.5.1", features = ["neovim-0-10", "test", "neovim-nightly"] }
+thiserror = "1.0.63"
+dirs = "5.0.1"
+regex = "1.10.6"
+
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.128"
+
+[lib]
+name = "nekifoch"
+crate-type = ["cdylib"]

@@ -1,5 +1,14 @@
-<h1 align="center">NeKiFoCh</h1>
+<h1 align="center" id='top'>NeKiFoCh</h1>
 <h3 align="center">Neovim Kitty Font Changer</h3>
+
+<div align="center">
+
+[![Release](https://github.com/NeViRAIDE/nekifoch.nvim/actions/workflows/release.yml/badge.svg)](https://github.com/NeViRAIDE/nekifoch.nvim/actions/workflows/ci.yml)
+![License](https://img.shields.io/github/license/NeViRAIDE/nekifoch.nvim)
+![Neovim version](https://img.shields.io/badge/Neovim-0.10-57A143?logo=neovim)
+
+</div>
+
 <hr>
 
 <p align="center">
@@ -21,36 +30,54 @@
 
 https://github.com/RAprogramm/nekifoch/assets/70325462/04a0d7e7-a42e-4588-a926-0945adacb3f0
 
+<div align="center">
+
 ## Installation
+
+</div>
 
 Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
     'NeViRAIDE/nekifoch.nvim',
+    build = './install.sh',
     cmd = 'Nekifoch',
     opts = {},
 }
 ```
 
-<h2 id='defaults'>Default config values</h2>
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
+
+<h2 align=center id='defaults'>Default config values</h2>
 
 ```lua
 {
-    kitty_conf_path = vim.env.HOME .. '~/.config/kitty/kitty.conf',
+    kitty_conf_path = '~/.config/kitty/kitty.conf',
     which_key = {
         enable = false,
     },
-    borders = 'rounded',
+    borders = 'none', --available values are: 'rounded', 'single', 'double', 'shadow', 'solid', 'none'
 }
 ```
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
+
+<div align="center">
 
 ## Usage
+
+</div>
 
 Nekifoch provides the `:Nekifoch` command with the following syntax:
 
 ```vim
-:Nekifoch [action] [font_family]
+:Nekifoch [action] [font_family/font_size]
 ```
 
 - `[action]` can be one of:
@@ -58,9 +85,15 @@ Nekifoch provides the `:Nekifoch` command with the following syntax:
   - `set_font`,
   - `set_size`,
   - `list`.
-- `[font_family]`: New font family for the `set_font` action.
+- `[font_family/font_size]`: New font family/size for the `set_font`/`set_size` action.
 
-Examples:
+#### Examples:
+
+- Open NeKiFoCh main menu:
+
+```vim
+:Nekifoch
+```
 
 - Check the current font family and size:
 
@@ -71,7 +104,7 @@ Examples:
 - Replace the font family with "DejaVu Sans Mono":
 
 ```vim
-:Nekifoch set_font DejaVu Sans Mono
+:Nekifoch set_font DejaVuSansMono
 ```
 
 - Replace the font size with "14":
@@ -86,7 +119,16 @@ Examples:
 :Nekifoch list
 ```
 
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
+
+<div align="center">
+
 ## Configuration
+
+</div>
 
 Configure Nekifoch using the FontReplaceConfig dictionary:
 
@@ -105,20 +147,28 @@ or
 ```lua
 {
     'NeViRAIDE/nekifoch.nvim',
+    build = './install.sh',
     cmd = 'Nekifoch', -- to add lazy loading
     opts = {
         kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf'), -- your kitty config path
         which_key = {
-            enable = false, -- without which_key and nui
+            enable = false, -- without which_key
         },
     }
 }
 ```
 
 Replace '~/.config/kitty/kitty.conf' with the actual path to your Kitty terminal configuration.
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
 
-<h2 id='whichkey'>WhichKey and Nui UI</h2>
+<div align="center">
 
+<h2 id='whichkey'>WhichKey</h2>
+
+</div>
 
 
 https://github.com/RAprogramm/nekifoch/assets/70325462/eb418579-7ef1-4d14-83cb-f9baf2e68b52
@@ -126,7 +176,7 @@ https://github.com/RAprogramm/nekifoch/assets/70325462/eb418579-7ef1-4d14-83cb-f
 
 
 > [!IMPORTANT]
-> [Nui](https://github.com/MunifTanjim/nui.nvim) and [WhichKey](https://github.com/folke/which-key.nvim) must be installed
+> [WhichKey](https://github.com/folke/which-key.nvim) must be installed
 
 Here's an example configuration using Lua:
 
@@ -144,9 +194,8 @@ or
 {
   'NeViRAIDE/nekifoch.nvim',
   event = 'VeryLazy',
+  build = './install.sh',
   dependencies = {
-    { 'nvim-lua/plenary.nvim' },
-    { 'MunifTanjim/nui.nvim' },
     {
       "folke/which-key.nvim",
       event = "VeryLazy",
@@ -169,13 +218,25 @@ or
 }
 ```
 
+<div align="center">
+
 ## Credits
 
-Developed by RAprogramm. Contributions are welcome.
+Developed by [RAprogramm](https://github.com/RAprogramm). Contributions are welcome.
+
+</div>
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
+
+<div align="center">
 
 ## License
 
-Distributed under the ... (not chosen yet).
+</div>
+
+[APACHE 2.0](https://github.com/NeViRAIDE/nekifoch.nvim/blob/main/LICENSE)
 
 For in-depth details and usage instructions, refer to the documentation.
 
@@ -183,12 +244,32 @@ For in-depth details and usage instructions, refer to the documentation.
 
 Enhance your Kitty terminal experience with Nekifoch
 
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
+
+
+<div align="center">
+
 ## Donations
 
+</div>
+
 If you find this plugin helpful and would like to support its development, you can buy me a coffee through the following platforms:
+
+
+<div align="center">
 
 [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/rozanov)
 
 [![buymeacoffee](https://img.buymeacoffee.com/button-api/?username=YOUR_BMC_USERNAME&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000)](https://www.buymeacoffee.com/raprogramm)
 
 Your support is greatly appreciated!
+
+</div>
+
+<br>
+<p align="right">
+  <a href="#top">. . . go top</a>
+</p>
