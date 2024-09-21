@@ -17,10 +17,15 @@
 //!
 //! The following commands can be executed in Neovim to interact with the plugin:
 //!
+//! - `:Nekifoch`: Open main menu in floating window.
+//! - `:Nekifoch set_font`: Open floating window to set font family.
 //! - `:Nekifoch set_font <font_family>`: Set the Kitty terminal's font family.
+//! - `:Nekifoch set_size`: Open floating window to set font size.
 //! - `:Nekifoch set_size <font_size>`: Set the font size in the Kitty terminal.
 //! - `:Nekifoch check`: Display the current font family.
+//! - `:Nekifoch float_check`: Display the current font family and size in floating window.
 //! - `:Nekifoch list`: List all available fonts that can be used with Kitty.
+//! - `:Nekifoch float_list`: List all available fonts that can be used with Kitty in floating window.
 //! - `:Nekifoch close`: Close the floating window used to display font information.
 
 use nvim_oxi::{
@@ -31,7 +36,7 @@ use nvim_oxi::{
 use crate::{setup::Config, utils::Utils};
 
 use buffer::BufferManager;
-use command::{get_fonts_list, Command};
+use command::Command;
 use window::FloatWindow;
 
 mod buffer;
@@ -108,7 +113,7 @@ impl App {
                     self.set_font_size(None)
                 }
             }
-            Command::List => get_fonts_list(),
+            Command::List => self.get_fonts_list(),
             Command::FList => self.get_fonts_list_window(),
         }
     }
@@ -120,38 +125,17 @@ impl App {
         let mut fonts: Vec<String> = compatible.values().cloned().collect();
         fonts.sort();
 
-        let content = Utils::format_fonts_in_columns(fonts);
+        let content = Utils::format_fonts_in_columns(&fonts);
 
         let window_height = content.lines().count();
 
-        self.float_window
-            .f_list_win(&self.config, " Available fonts ", content, window_height)?;
+        self.float_window.f_list_win(
+            &self.config,
+            " Available fonts ",
+            content.to_string(),
+            window_height,
+        )?;
 
-        Ok(())
-    }
-
-    /// Retrieves and displays the current font family and size from the Kitty terminal configuration.
-    ///
-    /// This method queries the current font settings stored in the Kitty terminal configuration
-    /// and prints the font family and size in the Neovim output. The font information is fetched
-    /// using a utility function from the `Utils` module, which interacts with the configuration
-    /// specified in the `config` field of the `App` structure.
-    ///
-    /// # Returns
-    ///
-    /// Returns an `OxiResult<()>` to indicate success or failure. If an error occurs while fetching
-    /// the font data, the error will be propagated up to the caller.
-    ///
-    /// # Errors
-    ///
-    /// This function returns an error if the `Utils::get` function fails to retrieve the font
-    /// configuration from Kitty.
-    fn get_current_font(&mut self) -> OxiResult<()> {
-        let fonts = Utils::get(&self.config)?;
-        print!(
-            "\nFont family: {:?}\nFont size: {:?}\n",
-            fonts["font"], fonts["size"]
-        );
         Ok(())
     }
 
@@ -247,16 +231,16 @@ impl App {
         )
     }
 
-    pub fn size_up(&mut self) -> OxiResult<()> {
+    fn change_font_size(&mut self, delta: f32) -> OxiResult<()> {
         let fonts = Utils::get(&self.config)?;
 
         if let Some(size_str) = fonts.get("size") {
             if let Ok(current_size) = size_str.parse::<f32>() {
-                let new_size = current_size + 0.5;
+                let new_size = current_size + delta;
                 self.set_font_size(Some(&new_size.to_string()))?;
                 self.update_size_display(new_size)?;
             } else {
-                err_writeln("Invalid font size found in the configuration file.");
+                err_writeln("Invalid font size found in the configuration.");
             }
         } else {
             err_writeln("Font size not found in the configuration.");
@@ -265,27 +249,17 @@ impl App {
         Ok(())
     }
 
+    pub fn size_up(&mut self) -> OxiResult<()> {
+        self.change_font_size(0.5)
+    }
+
     pub fn size_down(&mut self) -> OxiResult<()> {
-        let fonts = Utils::get(&self.config)?;
-
-        if let Some(size_str) = fonts.get("size") {
-            if let Ok(current_size) = size_str.parse::<f32>() {
-                let new_size = current_size - 0.5;
-                self.set_font_size(Some(&new_size.to_string()))?;
-                self.update_size_display(new_size)?;
-            } else {
-                err_writeln("Invalid font size found in the configuration file.");
-            }
-        } else {
-            err_writeln("Font size not found in the configuration.");
-        }
-
-        Ok(())
+        self.change_font_size(-0.5)
     }
 
     fn update_size_display(&mut self, new_size: f32) -> OxiResult<()> {
         if let Some(window) = &self.float_window.window {
-            let content = format!("\t\t\t\t\nCurrent size: [ {} ]\n\t\t\t\t", new_size);
+            let content = Utils::format_size_content(new_size);
             let mut buf = window.get_buf()?;
             BufferManager::set_buffer_content(&mut buf, &content)?;
 
@@ -295,6 +269,58 @@ impl App {
             err_writeln("Window is not open.");
         }
 
+        Ok(())
+    }
+
+    /// Retrieves and displays the current font family and size from the Kitty terminal configuration.
+    ///
+    /// This method queries the current font settings stored in the Kitty terminal configuration
+    /// and prints the font family and size in the Neovim output. The font information is fetched
+    /// using a utility function from the `Utils` module, which interacts with the configuration
+    /// specified in the `config` field of the `App` structure.
+    ///
+    /// # Returns
+    ///
+    /// Returns an `OxiResult<()>` to indicate success or failure. If an error occurs while fetching
+    /// the font data, the error will be propagated up to the caller.
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error if the `Utils::get` function fails to retrieve the font
+    /// configuration from Kitty.
+    fn get_current_font(&mut self) -> OxiResult<()> {
+        let fonts = Utils::get(&self.config)?;
+        print!(
+            "\nFont family: {:?}\nFont size: {:?}\n",
+            fonts["font"], fonts["size"]
+        );
+        Ok(())
+    }
+
+    /// Retrieves and prints the list of available fonts that are compatible with Kitty.
+    ///
+    /// This function queries the list of fonts installed on the system and compares it
+    /// with the list of fonts supported by Kitty. The resulting list of compatible fonts
+    /// is sorted and printed to the Neovim output.
+    ///
+    /// # Returns
+    ///
+    /// Returns an `OxiResult<()>` indicating success or failure.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if it fails to retrieve the list of installed fonts.
+    pub fn get_fonts_list(&self) -> OxiResult<()> {
+        let installed_fonts = Utils::list_installed_fonts();
+        let compatible = Utils::compare_fonts_with_kitty_list_fonts(installed_fonts);
+
+        let mut fonts: Vec<&String> = compatible.values().collect();
+        fonts.sort();
+
+        print!("Available fonts:");
+        for font in fonts {
+            print!("  - {font}");
+        }
         Ok(())
     }
 }

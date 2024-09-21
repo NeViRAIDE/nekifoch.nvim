@@ -11,6 +11,8 @@ use nvim_oxi::{
 
 use crate::{setup::Config, utils::Utils};
 
+use self::config::{CustomWindowConfig, WindowType};
+
 use super::{
     buffer::BufferManager,
     mapping::{
@@ -19,49 +21,11 @@ use super::{
     },
 };
 
+mod config;
+
 #[derive(Debug)]
 pub struct FloatWindow {
     pub window: Option<Window>,
-}
-
-pub enum WindowType {
-    FontSizeControl,
-    FontFamilyMenu,
-    MainMenu,
-    FontInfo,
-    FontList,
-}
-
-pub struct CustomWindowConfig<'a> {
-    title: &'a str,
-    height: usize,
-    width: usize,
-    content: Option<&'a str>,
-    keymaps: bool,
-    window_type: WindowType,
-}
-
-impl<'a> CustomWindowConfig<'a> {
-    pub fn new(title: &'a str, height: usize, width: usize, window_type: WindowType) -> Self {
-        Self {
-            title,
-            height,
-            width,
-            content: None,
-            keymaps: false,
-            window_type,
-        }
-    }
-
-    pub fn with_keymaps(mut self, keymaps: bool) -> Self {
-        self.keymaps = keymaps;
-        self
-    }
-
-    pub fn with_content(mut self, content: Option<&'a str>) -> Self {
-        self.content = content;
-        self
-    }
 }
 
 impl FloatWindow {
@@ -143,8 +107,6 @@ impl FloatWindow {
             .width(params.width as u32)
             .title(WindowTitle::SimpleString(params.title.into()))
             .title_pos(WindowTitlePosition::Center)
-            // .footer(WindowTitle::SimpleString(" [ Back: <esc> | Up: <k> | Down: <j> | Quit: <q> ] ".into()))
-            // .footer_pos(WindowTitlePosition::Right)
             .border(win_border)
             .build();
 
@@ -185,7 +147,7 @@ impl FloatWindow {
     }
 
     pub fn f_size_win(&mut self, config: &Config, title: &str, current_size: f32) -> OxiResult<()> {
-        let content = format!("\t\t\t\t\nCurrent size: [ {} ]\n\t\t\t\t", current_size);
+        let content = Utils::format_size_content(current_size);
 
         let window_config = CustomWindowConfig::new(title, 3, 25, WindowType::FontSizeControl)
             .with_content(Some(&content))

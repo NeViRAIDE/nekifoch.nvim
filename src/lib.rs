@@ -5,9 +5,9 @@ use nvim_oxi::{
     Dictionary, Error as OxiError, Function, Result as OxiResult,
 };
 
-use setup::Config;
-
 use core::{command::Command, completion::completion, App};
+use error::PluginError;
+use setup::Config;
 
 mod core;
 mod error;
@@ -35,10 +35,15 @@ fn nekifoch() -> OxiResult<Dictionary> {
 
             let command = Command::from_str(&action, argument.as_deref());
 
-            if let Some(command) = command {
-                app_handle_cmd.lock().unwrap().handle_command(command)?;
-            } else {
-                err_writeln(&format!("Unknown command: {}", action));
+            match command {
+                Some(command) => {
+                    if let Ok(mut app_lock) = app_handle_cmd.lock() {
+                        app_lock.handle_command(command)?;
+                    } else {
+                        err_writeln("Failed to acquire lock on app");
+                    }
+                }
+                None => err_writeln(&format!("Unknown command: {}", action)),
             };
 
             Ok(())
@@ -58,8 +63,16 @@ fn nekifoch() -> OxiResult<Dictionary> {
         Dictionary::from_iter::<[(&str, Function<Dictionary, Result<(), OxiError>>); 1]>([(
             "setup",
             Function::from_fn(move |dict: Dictionary| -> OxiResult<()> {
-                let mut app = app_setup.lock().unwrap();
-                app.setup(dict)
+                match app_setup.lock() {
+                    Ok(mut app) => app.setup(dict),
+                    Err(e) => {
+                        err_writeln(&format!(
+                            "Failed to acquire lock on app during setup: {}",
+                            e
+                        ));
+                        Err(PluginError::Custom("Lock error during setup".into()).into())
+                    }
+                }
             }),
         )]);
 

@@ -13,10 +13,6 @@
 //! - `from_str`: Function for parsing a command and its argument from strings.
 //! - `get_fonts_list`: Function for retrieving and printing the list of available fonts.
 
-use nvim_oxi::{print, Result as OxiResult};
-
-use crate::utils::Utils;
-
 #[derive(Debug)]
 pub enum Command {
     MainMenu,
@@ -64,31 +60,4 @@ impl Command {
             _ => None,
         }
     }
-}
-
-/// Retrieves and prints the list of available fonts that are compatible with Kitty.
-///
-/// This function queries the list of fonts installed on the system and compares it
-/// with the list of fonts supported by Kitty. The resulting list of compatible fonts
-/// is sorted and printed to the Neovim output.
-///
-/// # Returns
-///
-/// Returns an `OxiResult<()>` indicating success or failure.
-///
-/// # Errors
-///
-/// This function will return an error if it fails to retrieve the list of installed fonts.
-pub fn get_fonts_list() -> OxiResult<()> {
-    let installed_fonts = Utils::list_installed_fonts();
-    let compatible = Utils::compare_fonts_with_kitty_list_fonts(installed_fonts);
-
-    let mut fonts: Vec<&String> = compatible.values().collect();
-    fonts.sort();
-
-    print!("Available fonts:");
-    for font in fonts {
-        print!("  - {font}");
-    }
-    Ok(())
 }

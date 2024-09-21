@@ -20,9 +20,11 @@
 //! ```
 
 use std::{
+    borrow::Cow,
     collections::{HashMap, HashSet},
     fs::File,
     io::{BufReader, BufWriter, Read, Write},
+    iter::repeat,
     path::{Path, PathBuf},
     process::Command,
     sync::OnceLock,
@@ -37,6 +39,11 @@ use regex::Regex;
 use serde_json::Value;
 
 use crate::{error::PluginError, Config};
+
+static CACHED_DIMENSIONS: OnceLock<(usize, usize)> = OnceLock::new();
+
+const SIZE_TEMPLATE_TOP: &str = "\t\t\t\t\n";
+const SIZE_TEMPLATE_BOTTOM: &str = "\t\t\t\t";
 
 pub struct Utils;
 
@@ -663,39 +670,45 @@ impl Utils {
         win_height: usize,
         win_width: usize,
     ) -> Result<(usize, usize), PluginError> {
-        let opts = OptionOpts::default();
+        let dimensions = CACHED_DIMENSIONS.get_or_init(|| {
+            let editor_height =
+                get_option_value::<usize>("lines", &OptionOpts::default()).unwrap_or(25);
+            let editor_width =
+                get_option_value::<usize>("columns", &OptionOpts::default()).unwrap_or(80);
+            (editor_height, editor_width)
+        });
 
-        let editor_height: usize = get_option_value::<usize>("lines", &opts)
-            .map_err(|e| PluginError::Custom(format!("Error getting editor height: {e}")))?;
-        let editor_width: usize = get_option_value::<usize>("columns", &opts)
-            .map_err(|e| PluginError::Custom(format!("Error getting editor width: {e}")))?;
-
-        let row = (editor_height - win_height) / 2;
-        let col = (editor_width - win_width) / 2;
+        let row = (dimensions.0 - win_height) / 2;
+        let col = (dimensions.1 - win_width) / 2;
 
         Ok((row, col))
     }
 
-    pub fn format_fonts_in_columns(fonts: Vec<String>) -> String {
-        let mut sorted_fonts = fonts;
-        sorted_fonts.sort(); // сортируем список шрифтов по алфавиту
-
-        let total_fonts = sorted_fonts.len();
-        let midpoint = (total_fonts + 1) / 2; // середина списка
-
-        let (left_column, right_column) = sorted_fonts.split_at(midpoint); // разбиваем список на две части
-
-        let mut content = String::new();
-
-        // Формируем строки для двух колонок
-        for (left, right) in left_column.iter().zip(
-            right_column
-                .iter()
-                .chain(std::iter::repeat(&"".to_string())), // заполняем пустыми строками, если правая колонка короче
-        ) {
-            content.push_str(&format!("{:<40} {}\n", left, right)); // выравнивание колонок
+    pub fn format_fonts_in_columns(fonts: &[String]) -> Cow<'_, str> {
+        if fonts.is_empty() {
+            return Cow::Borrowed("No fonts available");
         }
 
-        content
+        let sorted_fonts: Vec<_> = fonts.to_vec();
+        let midpoint = (sorted_fonts.len() + 1) / 2;
+
+        let (left_column, right_column) = sorted_fonts.split_at(midpoint);
+
+        let mut content = String::new();
+        for (left, right) in left_column
+            .iter()
+            .zip(right_column.iter().chain(repeat(&"".to_string())))
+        {
+            content.push_str(&format!("{:<40} {}\n", left, right));
+        }
+
+        Cow::Owned(content)
+    }
+
+    pub fn format_size_content(size: f32) -> String {
+        format!(
+            "{}Current size: [ {} ]\n{}",
+            SIZE_TEMPLATE_TOP, size, SIZE_TEMPLATE_BOTTOM
+        )
     }
 }
