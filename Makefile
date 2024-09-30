@@ -1,9 +1,12 @@
-.PHONY: all clean test
+.PHONY: all clean test install
 
-all: clean test
+all: install
 
 clean:
-	rm lua/nekifoch.so
+	rm -f lua/nekifoch.so
 
-test:
+test: clean
 	./test.sh
+
+install:
+	chmod +x ./install.sh && ./install.sh

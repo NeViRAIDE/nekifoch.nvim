@@ -18,6 +18,7 @@ jobs:
         uses: kdheepak/panvimdoc@main
         with:
           vimdoc: nekifoch
+          version: "NVIM v0.10.0" # Vim version number
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: 'chore(docs): auto generate vimdoc'
