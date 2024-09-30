@@ -43,9 +43,9 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 ```lua
 {
     'NeViRAIDE/nekifoch.nvim',
-    build = 'make',
+    build = 'chmod +x ./install.sh && ./install.sh',
     cmd = 'Nekifoch',
-    opts = {},
+    config = true,
 }
 ```
 
@@ -58,7 +58,7 @@ Install Nekifoch using your favorite plugin manager. For example, with [lazy.nvi
 ```lua
 {
     kitty_conf_path = '~/.config/kitty/kitty.conf',
-    borders = 'none', --available values are: 'rounded', 'single', 'double', 'shadow', 'solid', 'none'
+    borders = 'single', --available values are: 'rounded', 'single', 'double', 'shadow', 'solid', 'none'
 }
 ```
 
@@ -74,7 +74,7 @@ Nekifoch provides the `:Nekifoch` command with the following syntax:
 :Nekifoch [action] [font_family/font_size]
 ```
 
-- `[action]` can be one of:
+- `[action]` (optional) can be one of:
   - `check`,
   - `set_font`,
   - `set_size`,
@@ -104,9 +104,19 @@ Nekifoch provides the `:Nekifoch` command with the following syntax:
 :Nekifoch set_font DejaVuSansMono
 ```
 
+- Open float window to set font family:
+```vim
+:Nekifoch set_font
+```
+
 - Replace the font size with "14":
 ```vim
 :Nekifoch set_size 14
+```
+
+- Open float window to set font size:
+```vim
+:Nekifoch set_size
 ```
 
 - List available fonts compatible with Kitty:
@@ -142,7 +152,7 @@ or
 ```lua
 {
     'NeViRAIDE/nekifoch.nvim',
-    build = 'make',
+    build = 'chmod +x ./install.sh && ./install.sh',
     cmd = 'Nekifoch', -- to add lazy loading
     opts = {
         kitty_conf_path = vim.fn.expand('~/.config/kitty/kitty.conf'), -- your kitty config path
