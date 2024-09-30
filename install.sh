@@ -40,8 +40,6 @@ download() {
 
 		build
 	fi
-
-	find . -not \( -path "./lua*" -or -path "./doc*" -or -path "./.git*" -or -name "." \) -delete
 }
 
 case "$1" in
